@@ -1,7 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using TransactionApi.Application.Commands.CreateTransaction;
+using TransactionApi.Domain.Entities;
+using TransactionApi.Domain.Enums;
+using TransactionApi.Infrastructure;
 using TransactionApi.Tests.Fixtures;
 
 namespace TransactionApi.Tests.Integration;
@@ -235,6 +239,25 @@ public class TransactionEndpointsTests : IClassFixture<PerTestClassSqliteFixture
     }
 
     [Fact]
+    public async Task GetAccountBalance_SelfTransfer_NetContributionIsZero()
+    {
+        await _client.PostAsJsonAsync("/transactions", new
+        {
+            fromAccount = "ACC-SELF",
+            toAccount = "ACC-SELF",
+            amount = 999m,
+            currency = "USD",
+            type = "Transfer"
+        });
+
+        var response = await _client.GetAsync("/accounts/ACC-SELF/balance");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0m, result.GetProperty("balance").GetDecimal());
+    }
+
+    [Fact]
     public async Task GetTransactions_FilterByAccountId_ReturnsOnlyTransactionsForThatAccount()
     {
         // Arrange - Create transactions with different accounts
@@ -317,6 +340,86 @@ public class TransactionEndpointsTests : IClassFixture<PerTestClassSqliteFixture
         var result = await response.Content.ReadFromJsonAsync<List<JsonElement>>();
         Assert.NotNull(result);
         Assert.Single(result);
+    }
+
+    [Fact]
+    public async Task GetTransactions_ToFilter_WithPreciseTimestamp_DoesNotExtendPastThatInstant()
+    {
+        await using var scope = _fixture.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TransactionDbContext>();
+        var withinRangeId = Guid.NewGuid();
+        var afterCutoffId = Guid.NewGuid();
+        db.Transactions.AddRange(
+            new Transaction
+            {
+                Id = withinRangeId,
+                ToAccount = "ACC-TO-CUTOFF",
+                Amount = 1,
+                Currency = "USD",
+                Type = TransactionType.Deposit,
+                Timestamp = new DateTime(2026, 12, 31, 22, 0, 0, DateTimeKind.Utc),
+                Status = TransactionStatus.Completed
+            },
+            new Transaction
+            {
+                Id = afterCutoffId,
+                ToAccount = "ACC-TO-CUTOFF",
+                Amount = 1,
+                Currency = "USD",
+                Type = TransactionType.Deposit,
+                Timestamp = new DateTime(2027, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+                Status = TransactionStatus.Completed
+            });
+        await db.SaveChangesAsync();
+
+        var to = Uri.EscapeDataString("2026-12-31T23:59:59Z");
+        var response = await _client.GetAsync($"/transactions?to={to}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<List<JsonElement>>();
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal(withinRangeId.ToString(), result[0].GetProperty("id").GetString());
+    }
+
+    [Fact]
+    public async Task GetTransactions_ToFilter_MidnightUpperBound_IncludesRestOfUtcCalendarDay()
+    {
+        await using var scope = _fixture.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TransactionDbContext>();
+        var lateOnDayId = Guid.NewGuid();
+        var nextDayId = Guid.NewGuid();
+        db.Transactions.AddRange(
+            new Transaction
+            {
+                Id = lateOnDayId,
+                ToAccount = "ACC-EOD",
+                Amount = 1,
+                Currency = "USD",
+                Type = TransactionType.Deposit,
+                Timestamp = new DateTime(2026, 6, 15, 23, 30, 0, DateTimeKind.Utc),
+                Status = TransactionStatus.Completed
+            },
+            new Transaction
+            {
+                Id = nextDayId,
+                ToAccount = "ACC-EOD",
+                Amount = 1,
+                Currency = "USD",
+                Type = TransactionType.Deposit,
+                Timestamp = new DateTime(2026, 6, 16, 0, 30, 0, DateTimeKind.Utc),
+                Status = TransactionStatus.Completed
+            });
+        await db.SaveChangesAsync();
+
+        var to = Uri.EscapeDataString("2026-06-15T00:00:00Z");
+        var response = await _client.GetAsync($"/transactions?to={to}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<List<JsonElement>>();
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equal(lateOnDayId.ToString(), result[0].GetProperty("id").GetString());
     }
 
     [Fact]

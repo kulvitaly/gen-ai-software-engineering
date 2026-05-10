@@ -16,22 +16,15 @@ public class GetAccountBalanceQueryHandler : IRequestHandler<GetAccountBalanceQu
 
     public async Task<decimal> Handle(GetAccountBalanceQuery request, CancellationToken cancellationToken)
     {
-        var balance = await _context.Transactions
-            .AsNoTracking()
-            .Where(t => t.Status == TransactionStatus.Completed)
-            .AsAsyncEnumerable()
-            .AggregateAsync(
-                0m,
-                (acc, t) =>
-                {
-                    if (t.ToAccount == request.AccountId)
-                        return acc + t.Amount;
-                    if (t.FromAccount == request.AccountId)
-                        return acc - t.Amount;
-                    return acc;
-                },
-                cancellationToken);
+        var accountId = request.AccountId;
 
-        return balance;
+        return await _context.Transactions
+            .AsNoTracking()
+            .Where(t => t.Status == TransactionStatus.Completed
+                        && (t.ToAccount == accountId || t.FromAccount == accountId))
+            .SumAsync(
+                t => (t.ToAccount == accountId ? t.Amount : 0m)
+                     + (t.FromAccount == accountId ? -t.Amount : 0m),
+                cancellationToken);
     }
 }

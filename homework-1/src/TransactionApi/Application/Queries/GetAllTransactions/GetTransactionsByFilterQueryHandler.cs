@@ -30,11 +30,15 @@ public class GetTransactionsByFilterQueryHandler : IRequestHandler<GetTransactio
             query = query.Where(t => t.Timestamp >= request.FromDate.Value);
         }
 
-        // Filter by ToDate (include entire end day)
+        // Filter by ToDate: when the bound is date-only (midnight), include the whole calendar day;
+        // otherwise treat the value as an exact inclusive upper instant (e.g. ...T23:59:59Z).
         if (request.ToDate.HasValue)
         {
-            var endOfDay = request.ToDate.Value.AddDays(1).AddTicks(-1);
-            query = query.Where(t => t.Timestamp <= endOfDay);
+            var to = request.ToDate.Value;
+            var upperInclusive = to.TimeOfDay == TimeSpan.Zero
+                ? to.Date.AddDays(1).AddTicks(-1)
+                : to;
+            query = query.Where(t => t.Timestamp <= upperInclusive);
         }
 
         var transactions = await query

@@ -29,9 +29,11 @@ builder.Host.UseSerilog();
 // Add services to the container
 builder.Services.AddOpenApi();
 
-// Configure Database — shared in-memory SQLite (see Microsoft.Data.Sqlite shared-cache)
-var sqliteConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Data Source=TransactionApi;Mode=Memory;Cache=Shared";
+// Configure Database — shared in-memory SQLite (see Microsoft.Data.Sqlite shared-cache; match ConnectionStrings:DefaultConnection in appsettings.json)
+const string sharedInMemorySqlite = "Data Source=TransactionApi;Mode=Memory;Cache=Shared";
+var sqliteConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(sqliteConnectionString))
+    sqliteConnectionString = sharedInMemorySqlite;
 
 builder.Services.AddSingleton(_ =>
 {

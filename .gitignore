@@ -96,3 +96,5 @@ packages/
 .DS_Store
 Thumbs.db
 
+# SQLite file-backed dev DB (default config uses in-memory; ignore if switched locally)
+transactions.db
