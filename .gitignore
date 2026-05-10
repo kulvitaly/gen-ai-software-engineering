@@ -56,3 +56,43 @@ temp/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+
+# Build results
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.sln.user
+*.user
+*.userosscache
+*.suo
+*.pidb
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Rider
+.idea/
+*.sln.iml
+
+# Build artifacts
+*.exe
+*.dll
+*.pdb
+*.nupkg
+
+# NuGet
+.nuget/
+packages/
+*.nuspec
+
+# Local environment
+.env
+.env.local
+
+# OS specific
+.DS_Store
+Thumbs.db
+
