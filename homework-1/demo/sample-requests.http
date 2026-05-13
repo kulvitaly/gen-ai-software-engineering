@@ -1,0 +1,75 @@
+###############################################################################
+# TransactionApi — REST Client examples (VS Code REST Client / JetBrains HTTP)
+# Start API: demo\run.bat  (defaults to http://localhost:5263)
+# With HTTPS profile: curl -k or use https://localhost:7117 as @baseUrl
+###############################################################################
+
+@baseUrl = http://localhost:5263
+
+### ---------- Transactions ----------
+
+### Create transfer
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "fromAccount": "ACC-10001",
+  "toAccount": "ACC-10002",
+  "amount": 150.50,
+  "currency": "USD",
+  "type": "Transfer"
+}
+
+### Create deposit (fromAccount omitted)
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "toAccount": "ACC-10001",
+  "amount": 500,
+  "currency": "EUR",
+  "type": "Deposit"
+}
+
+### Create withdrawal (toAccount omitted)
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "fromAccount": "ACC-10001",
+  "amount": 75.25,
+  "currency": "GBP",
+  "type": "Withdrawal"
+}
+
+### List all transactions
+GET {{baseUrl}}/transactions
+
+### List with filters (account, type, date range — ISO 8601)
+GET {{baseUrl}}/transactions?accountId=ACC-10001&type=Transfer&from=2026-01-01T00:00:00Z&to=2026-12-31T23:59:59Z
+
+### Export as CSV (body is text/csv, not JSON)
+GET {{baseUrl}}/transactions/export?format=csv
+
+### Get transaction by ID (paste id from a create response)
+@transactionId = 00000000-0000-0000-0000-000000000000
+GET {{baseUrl}}/transactions/{{transactionId}}
+
+### ---------- Accounts ----------
+
+### Account balance (completed postings only)
+GET {{baseUrl}}/accounts/ACC-10001/balance
+
+### Account summary (deposits, withdrawals, count, latest timestamp)
+GET {{baseUrl}}/accounts/ACC-10001/summary
+
+### Simple interest (rate is annual decimal; days uses 365-day year — see README)
+GET {{baseUrl}}/accounts/ACC-10001/interest?rate=0.05&days=30
+
+### ---------- Docs ----------
+
+### OpenAPI JSON
+GET {{baseUrl}}/openapi/v1.json
+
+### Scalar UI (browser)
+# {{baseUrl}}/scalar/v1
