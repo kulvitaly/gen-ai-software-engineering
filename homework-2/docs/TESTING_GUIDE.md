@@ -2,54 +2,151 @@
 
 This document provides guidance for testing the Intelligent Customer Support System implemented in **.NET 10**.
 
+## Current Implementation Status
+
+The project is currently at **Phase 0**:
+
+- The automated suite contains smoke tests in `tests/Tests/Phase0SmokeTests.cs`.
+- The tests verify layer references and the `/health` endpoint.
+- Coverage enforcement is configured in `tests/Tests/Tests.csproj` with an **85% total line coverage** threshold.
+- Full ticket, import, classification, integration, and performance tests are planned in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
 ## Test Pyramid Diagram
 
-The testing strategy follows the test pyramid approach, ensuring a balanced distribution of tests:
+The testing strategy follows the test pyramid approach:
 
 ```mermaid
 graph TD
-    A[Unit Tests] --> B[Integration Tests]
-    B --> C[End-to-End Tests]
+    UnitTests[Unit_Tests] --> IntegrationTests[Integration_Tests]
+    IntegrationTests --> EndToEndTests[End_To_End_Tests]
 ```
 
-- **Unit Tests**: Foundation of the pyramid, covering individual components.
-- **Integration Tests**: Validate interactions between components.
-- **End-to-End Tests**: Ensure the entire system works as expected.
+- **Unit tests** cover domain validation, parsers, classification rules, and application handlers.
+- **Integration tests** validate API, MediatR, repository, and SQLite interactions.
+- **End-to-end tests** verify complete user workflows through HTTP.
 
 ## How to Run Tests
 
-To run the automated test suite, use the following commands:
+Run from the repository root:
 
-1. **Run all tests**:
-   ```bash
-   dotnet test
-   ```
+```bash
+dotnet test CustomerSupportSystem.slnx
+```
 
-2. **Generate a test coverage report**:
-   ```bash
-   dotnet test --collect:"Code Coverage"
-   ```
+Run with the enforced coverage gate:
 
-The coverage report will be generated in the `TestResults/` directory. Ensure the overall coverage is ≥85%.
+```bash
+dotnet test CustomerSupportSystem.slnx /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Threshold=85 /p:ThresholdType=line /p:ThresholdStat=total
+```
+
+Current coverage behavior:
+
+- `coverlet.msbuild` fails the test command if total line coverage drops below **85%**.
+- Generated source files under `obj/**/*.cs` are excluded from coverage.
+- The Cobertura report is generated under the test project when coverage is collected.
+
+## Generate HTML Code Coverage Report
+
+The test project generates coverage in Cobertura XML format. Use **ReportGenerator** to convert it to an HTML report.
+
+Install ReportGenerator once:
+
+```bash
+dotnet tool install -g dotnet-reportgenerator-globaltool
+```
+
+Run tests with coverage:
+
+```bash
+dotnet test CustomerSupportSystem.slnx /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Threshold=85 /p:ThresholdType=line /p:ThresholdStat=total
+```
+
+Generate the HTML report:
+
+```bash
+reportgenerator -reports:"tests/Tests/coverage.cobertura.xml" -targetdir:"tests/Tests/coverage-report" -reporttypes:Html
+```
+
+Open the report:
+
+- Windows: `start tests/Tests/coverage-report/index.html`
+- macOS: `open tests/Tests/coverage-report/index.html`
+- Linux: `xdg-open tests/Tests/coverage-report/index.html`
+
+## Manual Smoke Testing
+
+Start the API:
+
+```bash
+dotnet run --project src/API/API.csproj
+```
+
+Or use a demo script:
+
+- Windows: `demo/run.bat`
+- Linux: `demo/run-linux.sh`
+- macOS: `demo/run-mac.sh`
+
+Verify the health endpoint:
+
+```bash
+curl http://localhost:5077/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "service": "CustomerSupportSystem"
+}
+```
+
+Open API documentation:
+
+- Scalar API reference: `http://localhost:5077/scalar/v1`
+- OpenAPI document: `http://localhost:5077/openapi/v1.json`
+
+## Planned Test Files and Counts
+
+The final test suite must satisfy [TASKS.md](../TASKS.md):
+
+- `TicketApiTests.cs`: 11 API endpoint tests.
+- `TicketModelTests.cs`: 9 domain/model validation tests.
+- `ImportCsvTests.cs`: 6 CSV parsing/import tests.
+- `ImportJsonTests.cs`: 5 JSON parsing/import tests.
+- `ImportXmlTests.cs`: 5 XML parsing/import tests.
+- `CategorizationTests.cs`: 10 classification tests.
+- `IntegrationTests.cs`: 5 end-to-end workflow tests.
+- `PerformanceTests.cs`: 5 benchmark-style tests.
+
+Total planned tests: **56**.
 
 ## Sample Test Data Locations
 
-Sample data files for testing are located in the `tests/fixtures/` directory:
+Planned sample data files should live under `tests/fixtures/`:
 
 - `sample_tickets.csv`: 50 sample tickets in CSV format.
 - `sample_tickets.json`: 20 sample tickets in JSON format.
 - `sample_tickets.xml`: 30 sample tickets in XML format.
-- Invalid data files for negative test cases.
+- Invalid CSV, JSON, and XML files for negative test cases.
 
 ## Manual Testing Checklist
 
-Use the following checklist for manual testing:
+- [ ] Verify `/health` returns `200 OK`.
+- [ ] Verify Scalar UI loads.
+- [ ] Verify OpenAPI JSON loads.
+- [ ] Verify ticket endpoints respond with documented status codes after Phase 4.
+- [ ] Validate error handling for malformed requests after endpoint implementation.
+- [ ] Confirm auto-classification logic works after Phase 6.
+- [ ] Measure performance benchmarks for bulk imports after Phase 7.
 
-- [ ] Verify all API endpoints respond with correct status codes.
-- [ ] Validate error handling for malformed requests.
-- [ ] Test the Scalar UI for usability and responsiveness.
-- [ ] Confirm auto-classification logic works as expected.
-- [ ] Measure performance benchmarks for bulk imports.
+## Performance Benchmarks
 
-## Performance Benchmarks Table
-*(To be added)*
+Performance tests are not implemented yet. Fill this section after Phase 7 with measured local results for:
+
+- Bulk CSV import.
+- Bulk JSON import.
+- Bulk XML import.
+- Auto-classification batch behavior.
+- Filtered list queries.

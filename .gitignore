@@ -32,6 +32,8 @@ yarn-error.log*
 
 # Test coverage
 coverage/
+coverage-report/
+**/coverage-report/
 .nyc_output/
 htmlcov/
 .coverage

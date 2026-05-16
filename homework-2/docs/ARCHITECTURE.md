@@ -1,82 +1,166 @@
 # Architecture
 
-This document outlines the architecture of the Intelligent Customer Support System.
+This document outlines the target architecture for the Intelligent Customer Support System and records the current implementation state.
+
+## Current Implementation Status
+
+The repository is currently at **Phase 0**:
+
+- The solution contains `Domain`, `Application`, `Infrastructure`, `API`, and `Tests`.
+- The API starts successfully and exposes `/health`, OpenAPI JSON, and Scalar UI.
+- Dependency injection extension points exist in `Application` and `Infrastructure`.
+- Ticket domain entities, persistence, CQRS handlers, import, and classification are still planned.
 
 ## High-Level Architecture
 
-The project follows **Clean Architecture** principles, adhering to **SOLID** principles and leveraging **Domain-Driven Design (DDD)**. The architecture is structured into the following layers:
+The project follows **Clean Architecture** principles, with dependencies flowing inward toward the domain model. The target structure is:
 
-- **Domain Layer**: Contains core business logic, entities, and value objects.
-- **Application Layer**: Implements the CQRS pattern using MediatR for command and query handling.
-- **Infrastructure Layer**: Handles data access using Dapper and SQLite as the database.
-- **Presentation Layer**: Provides a RESTful WebAPI and Scalar UI for user interaction.
+- **Domain Layer**: Entities, value objects, enums, and business rules.
+- **Application Layer**: CQRS commands/queries, MediatR handlers, validation orchestration.
+- **Infrastructure Layer**: Dapper repositories, SQLite storage, schema setup.
+- **Presentation Layer**: ASP.NET Core REST API, OpenAPI JSON, and Scalar API reference.
 
-### High-Level Architecture Diagram
 ```mermaid
 graph TD
-    A[Presentation Layer (WebAPI, Scalar UI)] --> B[Application Layer (CQRS, MediatR)]
-    B --> C[Domain Layer (Entities, Business Logic)]
-    B --> D[Infrastructure Layer (Dapper, SQLite)]
+    API[Presentation_API_Scalar_OpenAPI] --> APP[Application_CQRS_MediatR]
+    APP --> DOM[Domain_Entities_Rules]
+    APP --> INF[Infrastructure_Dapper_SQLite]
+    INF --> DOM
 ```
 
 ## Component Descriptions
 
 ### Domain Layer
-- Core of the application.
-- Contains entities, value objects, and domain services.
-- Independent of external frameworks.
+
+The domain layer is the core of the system. It should remain independent of ASP.NET Core, Dapper, SQLite, MediatR, and other infrastructure packages.
+
+Current Phase 0 contents:
+
+- `DomainAssemblyMarker` for test and dependency wiring verification.
+
+Planned contents:
+
+- `Ticket` entity.
+- Ticket category, priority, status, source, and device-type enums.
+- Domain validation rules that do not depend on web or database concerns.
+- Classification-related value objects if needed.
 
 ### Application Layer
-- Implements the **CQRS** pattern using **MediatR**.
-- Handles commands and queries.
-- Coordinates between the Domain and Infrastructure layers.
+
+The application layer coordinates use cases and owns request/response shapes for commands and queries.
+
+Current Phase 0 contents:
+
+- `AddApplication()` service registration.
+- MediatR assembly scanning.
+- FluentValidation assembly scanning.
+
+Planned contents:
+
+- CQRS handlers for ticket create, update, delete, get, list, import, and auto-classify.
+- Validation behavior and structured application results.
+- Repository interfaces, unless the final implementation chooses to place them in `Domain`.
 
 ### Infrastructure Layer
-- Responsible for data access.
-- Uses **Dapper** as the ORM for lightweight and efficient database operations.
-- Stores data in **SQLite** for simplicity and portability.
+
+The infrastructure layer implements external concerns.
+
+Current Phase 0 contents:
+
+- `AddInfrastructure()` service registration placeholder.
+- Dapper and SQLite packages are installed.
+
+Planned contents:
+
+- SQLite schema initialization.
+- Dapper repository implementations.
+- Connection management and optional SQLite concurrency settings such as WAL mode.
 
 ### Presentation Layer
-- Exposes a **RESTful WebAPI** for external integrations.
-- Provides a **Scalar UI** for user interaction.
 
-## Data Flow Diagrams
+The API layer exposes HTTP endpoints and maps application results to status codes.
 
-### Request Flow
+Current Phase 0 contents:
+
+- `/health`
+- `/openapi/v1.json`
+- `/scalar/v1`
+
+Planned contents:
+
+- Ticket CRUD endpoints.
+- Multi-format import endpoint.
+- Auto-classification endpoint.
+- Consistent `ProblemDetails` or equivalent JSON error responses.
+
+## Request Flow
+
 ```mermaid
 sequenceDiagram
-    participant User
-    participant WebAPI
+    participant Client
+    participant API
     participant Application
     participant Domain
     participant Infrastructure
 
-    User->>WebAPI: Sends Request
-    WebAPI->>Application: Processes Command/Query
-    Application->>Domain: Executes Business Logic
-    Application->>Infrastructure: Accesses Database
-    Infrastructure-->>Application: Returns Data
-    Application-->>WebAPI: Returns Response
-    WebAPI-->>User: Sends Response
+    Client->>API: HTTP request
+    API->>Application: MediatR command/query
+    Application->>Domain: Execute business rules
+    Application->>Infrastructure: Load or persist data
+    Infrastructure-->>Application: Data result
+    Application-->>API: Application result
+    API-->>Client: HTTP response
+```
+
+## Import Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant ImportHandler
+    participant Parser
+    participant Repository
+
+    Client->>API: POST /tickets/import
+    API->>ImportHandler: Import command
+    ImportHandler->>Parser: Parse CSV JSON or XML
+    Parser-->>ImportHandler: Records and row errors
+    ImportHandler->>Repository: Save valid tickets
+    Repository-->>ImportHandler: Saved ticket ids
+    ImportHandler-->>API: Import summary
+    API-->>Client: Summary with successes and failures
 ```
 
 ## Design Decisions and Trade-Offs
 
 ### Clean Architecture
-- Ensures separation of concerns.
-- Promotes testability and maintainability.
 
-### Domain-Driven Design (DDD)
-- Focuses on the core business domain.
-- Aligns the code structure with business concepts.
+The layer split keeps API and database details out of the domain model. This makes domain validation and classification easier to test with fast unit tests.
 
 ### CQRS with MediatR
-- Simplifies the separation of read and write operations.
-- Improves scalability and maintainability.
+
+Commands and queries keep use cases explicit and provide a natural place for validation, logging, and result mapping. The trade-off is extra ceremony, which is acceptable because the homework requires multiple workflows and test types.
 
 ### Dapper and SQLite
-- **Dapper**: Lightweight ORM for high performance.
-- **SQLite**: Simple and portable database solution.
 
-## Security and Performance Considerations
-*(To be added)*
+Dapper keeps persistence lightweight and explicit. SQLite is simple for local development and demo usage. For concurrent write-heavy scenarios, the implementation should consider WAL mode, short transactions, and retry behavior, then document final limits after integration tests are implemented.
+
+### OpenAPI and Scalar
+
+OpenAPI JSON and Scalar UI are exposed by default in Phase 0. This keeps the API discoverable as endpoints are added.
+
+## Security Considerations
+
+- Validate all external input before creating or updating tickets.
+- Use parameterized SQL through Dapper to avoid SQL injection.
+- Return structured validation errors without leaking stack traces or internal SQL details.
+- Treat uploaded CSV, JSON, and XML as untrusted input.
+- Avoid logging sensitive customer data such as full descriptions if logs are retained.
+
+## Performance Considerations
+
+- Keep parsers streaming or bounded when importing larger files.
+- Use repository methods that support filtered queries at the database level instead of filtering all tickets in memory.
+- Add indexes for common filters such as `category`, `priority`, `status`, and `created_at` once the schema exists.
+- Measure bulk import and classification behavior in the performance tests required by [TASKS.md](../TASKS.md).
