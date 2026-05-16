@@ -4,7 +4,7 @@ This document provides guidance for testing the Intelligent Customer Support Sys
 
 ## Current Implementation Status
 
-The project is currently through **Phase 5**:
+The project is currently through **Phase 7**:
 
 - The automated suite contains smoke tests in `tests/Tests/Phase0SmokeTests.cs`.
 - The tests verify layer references and the `/health` endpoint.
@@ -13,9 +13,11 @@ The project is currently through **Phase 5**:
 - `tests/Tests/TicketHandlerTests.cs` covers application commands and queries for create, get, list, update, and delete.
 - `tests/Tests/TicketApiTests.cs` covers REST ticket CRUD endpoints, filtering, DataAnnotations validation, and not-found responses.
 - `tests/Tests/ImportCsvTests.cs`, `ImportJsonTests.cs`, and `ImportXmlTests.cs` cover parser branches and import summaries.
+- `tests/Tests/CategorizationTests.cs` covers keyword classification, confidence metadata, logging, and manual override behavior.
+- `tests/Tests/IntegrationTests.cs` covers full HTTP workflows, imports, classification, filtering, and 20 parallel creates/updates.
+- `tests/Tests/PerformanceTests.cs` covers benchmark-style budgets for CSV/JSON/XML import, auto-classification, and filtered list queries.
 - `tests/fixtures/` contains valid and invalid CSV, JSON, and XML import samples.
 - Coverage enforcement is configured in `tests/Tests/Tests.csproj` with an **85% total line coverage** threshold.
-- Classification, integration, and performance tests are planned in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 ## Test Pyramid Diagram
 
@@ -50,7 +52,7 @@ Current coverage behavior:
 - `coverlet.msbuild` fails the test command if total line coverage drops below **85%**.
 - Generated source files under `obj/**/*.cs` are excluded from coverage.
 - The Cobertura report is generated under the test project when coverage is collected.
-- Latest Phase 5 verification: **63 tests passed**, total line coverage **93.65%**, API line coverage **92.67%**, Application line coverage **93.12%**, Domain line coverage **90.13%**, Infrastructure line coverage **99.26%**.
+- Latest Phase 7 verification: **89 tests passed**, total line coverage **93.24%**, API line coverage **94.44%**, Application line coverage **93.79%**, Domain line coverage **87.45%**, Infrastructure line coverage **95.00%**.
 
 ## Generate HTML Code Coverage Report
 
@@ -123,9 +125,9 @@ The final test suite must satisfy [TASKS.md](../TASKS.md):
 - `ImportCsvTests.cs`: 6 CSV parsing/import tests.
 - `ImportJsonTests.cs`: 5 JSON parsing/import tests.
 - `ImportXmlTests.cs`: 5 XML parsing/import tests.
-- `CategorizationTests.cs`: 10 classification tests.
-- `IntegrationTests.cs`: 5 end-to-end workflow tests.
-- `PerformanceTests.cs`: 5 benchmark-style tests.
+- `CategorizationTests.cs`: 10 classification tests (**implemented in Phase 6**).
+- `IntegrationTests.cs`: 5 end-to-end workflow tests (**implemented in Phase 7**).
+- `PerformanceTests.cs`: 5 benchmark-style tests (**implemented in Phase 7**).
 
 Total planned tests: **56**.
 
@@ -145,15 +147,17 @@ Planned sample data files should live under `tests/fixtures/`:
 - [ ] Verify OpenAPI JSON loads.
 - [ ] Verify ticket endpoints respond with documented status codes after Phase 4.
 - [ ] Validate error handling for malformed requests after endpoint implementation.
-- [ ] Confirm auto-classification logic works after Phase 6.
-- [ ] Measure performance benchmarks for bulk imports after Phase 7.
+- [x] Confirm auto-classification logic works after Phase 6.
+- [x] Measure performance benchmarks for bulk imports after Phase 7.
 
 ## Performance Benchmarks
 
-Performance tests are not implemented yet. Fill this section after Phase 7 with measured local results for:
+Measured locally on Windows from `PerformanceTests.cs`:
 
-- Bulk CSV import.
-- Bulk JSON import.
-- Bulk XML import.
-- Auto-classification batch behavior.
-- Filtered list queries.
+- Bulk CSV import: 50 tickets in 79 ms, budget 3 seconds.
+- Bulk JSON import: 20 tickets in 1 second, budget 2 seconds.
+- Bulk XML import: 30 tickets in 82 ms, budget 3 seconds.
+- Auto-classification batch behavior: 25 tickets in 338 ms, budget 3 seconds.
+- Filtered list queries: 100 stored tickets filtered in 166 ms, budget 2 seconds.
+
+These are benchmark-style regression checks, not production load tests. The detailed performance-only run can fail the coverage gate because it intentionally executes only five tests; use the full `dotnet test` command for coverage verification.

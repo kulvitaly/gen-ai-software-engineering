@@ -13,6 +13,14 @@ public sealed class SqliteConnectionFactory(string connectionString) : ISqliteCo
     private static async ValueTask<SqliteConnection> Open(SqliteConnection connection, CancellationToken cancellationToken)
     {
         await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            PRAGMA busy_timeout = 5000;
+            PRAGMA journal_mode = WAL;
+            PRAGMA synchronous = NORMAL;
+            """;
+        await command.ExecuteNonQueryAsync(cancellationToken);
+
         return connection;
     }
 }

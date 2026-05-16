@@ -208,16 +208,16 @@ While implementing phases, fill placeholders in:
 
 ## Phase 7 — Integration and performance (`test_integration` **5**, `test_performance` **5**)
 
-- [ ] **RED** — `IntegrationTests.cs`:
-  - [ ] **Full lifecycle**: create → update status → resolve → get → delete (or close).
-  - [ ] **Bulk import** then verify **auto-classification** on selected rows (or on tickets created with flag).
-  - [ ] **Concurrent operations**: **≥ 20** parallel creates/updates; assert **no lost updates** / consistent counts (define acceptable SQLite behavior under load).
-  - [ ] **Combined filtering** by category **and** priority on `GET /tickets`.
-  - [ ] **Additional E2E** flow of your choice (e.g., import → classify → list filter).
-- [ ] **GREEN**: Fix contention (WAL mode, retries, or serialize where needed); document limits in ARCHITECTURE.
-- [ ] **RED** — `PerformanceTests.cs` (**5**): e.g., import **N** tickets under time budget; classify **M** tickets; list with filter; document thresholds in test names/constants.
-- [ ] **GREEN**: Tune only if tests fail; fill **Performance benchmarks** table in [TESTING_GUIDE.md](TESTING_GUIDE.md).
-- [ ] **Coverage**: **≥ 85%** overall solution.
+- [x] **RED** — `IntegrationTests.cs`:
+  - [x] **Full lifecycle**: create → update status → resolve → get → delete (or close).
+  - [x] **Bulk import** then verify **auto-classification** on selected rows (or on tickets created with flag).
+  - [x] **Concurrent operations**: **≥ 20** parallel creates/updates; assert **no lost updates** / consistent counts (define acceptable SQLite behavior under load).
+  - [x] **Combined filtering** by category **and** priority on `GET /tickets`.
+  - [x] **Additional E2E** flow of your choice (e.g., import → classify → list filter).
+- [x] **GREEN**: Fix contention (WAL mode, retries, or serialize where needed); document limits in ARCHITECTURE.
+- [x] **RED** — `PerformanceTests.cs` (**5**): e.g., import **N** tickets under time budget; classify **M** tickets; list with filter; document thresholds in test names/constants.
+- [x] **GREEN**: Tune only if tests fail; fill **Performance benchmarks** table in [TESTING_GUIDE.md](TESTING_GUIDE.md).
+- [x] **Coverage**: **≥ 85%** overall solution.
 
 ---
 

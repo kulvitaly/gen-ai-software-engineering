@@ -4,7 +4,7 @@ This document outlines the target architecture for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The repository is currently through **Phase 5**:
+The repository is currently through **Phase 7**:
 
 - The solution contains `Domain`, `Application`, `Infrastructure`, `API`, and `Tests`.
 - The API starts successfully and exposes `/health`, OpenAPI JSON, and Scalar UI.
@@ -14,7 +14,8 @@ The repository is currently through **Phase 5**:
 - CQRS handlers, FluentValidation validators, application result types, and ticket DTOs are implemented for create, get, list, update, and delete.
 - REST ticket CRUD endpoints are implemented with Minimal APIs, DataAnnotations request validation, snake_case JSON, and MediatR delegation.
 - CSV, JSON, and XML import parsers are implemented in Application with per-record errors and a raw-body `POST /tickets/import` endpoint.
-- Classification is still planned.
+- Auto-classification is implemented with keyword rules, classification metadata persistence, decision logging, and a `POST /tickets/{id}/auto-classify` endpoint.
+- Integration and performance tests cover full HTTP workflows, concurrent operations, import throughput, classification throughput, and filtered list performance.
 
 ## High-Level Architecture
 
@@ -45,12 +46,9 @@ Current contents:
 - `Ticket` entity.
 - `TicketDraft` input model for domain creation.
 - `TicketMetadata`.
+- `TicketClassification`.
 - Ticket category, priority, status, source, and device-type enums.
 - Domain validation rules that do not depend on web or database concerns.
-
-Planned contents:
-
-- Classification-related value objects if needed.
 
 ### Application Layer
 
@@ -67,11 +65,7 @@ Current contents:
 - FluentValidation validators and MediatR handlers for ticket commands and queries.
 - `IClock` abstraction for deterministic timestamp handling in tests.
 - Import parsers for CSV, JSON, and XML plus an import command handler that returns total, successful, and failed record summaries.
-
-Planned contents:
-
-- CQRS handlers for ticket auto-classify.
-- Cross-cutting validation behavior if handler-level validation becomes repetitive.
+- Ticket classifier service plus CQRS handlers for explicit and create-time auto-classification.
 
 ### Infrastructure Layer
 
@@ -81,13 +75,9 @@ Current contents:
 
 - `AddInfrastructure()` service registration.
 - Dapper and SQLite packages are installed.
-- `SqliteConnectionFactory` for connection management.
-- `SqliteTicketRepository` with schema bootstrap, parameterized SQL, and JSON storage for tags and metadata.
+- `SqliteConnectionFactory` for connection management, WAL mode, normal synchronous writes, and a 5-second SQLite busy timeout.
+- `SqliteTicketRepository` with schema bootstrap, lightweight schema migration for classification columns, parameterized SQL, and JSON storage for tags, metadata, and classification keywords.
 - Filtered ticket listing by `category`, `priority`, and `status`.
-
-Planned contents:
-
-- Optional SQLite concurrency settings such as WAL mode.
 
 ### Presentation Layer
 
@@ -104,11 +94,8 @@ Current contents:
 - `PUT /tickets/{id}`
 - `DELETE /tickets/{id}`
 - `POST /tickets/import`
+- `POST /tickets/{id}/auto-classify`
 - DataAnnotations request models for HTTP input validation.
-
-Planned contents:
-
-- Auto-classification endpoint.
 - Consistent `ProblemDetails` or equivalent JSON error responses.
 
 ## Request Flow
@@ -162,7 +149,9 @@ Commands and queries keep use cases explicit and provide a natural place for val
 
 ### Dapper and SQLite
 
-Dapper keeps persistence lightweight and explicit. SQLite is simple for local development and demo usage. The repository stores tags and metadata as JSON text and uses parameterized SQL for all writes and lookups. For concurrent write-heavy scenarios, the implementation should consider WAL mode, short transactions, and retry behavior, then document final limits after integration tests are implemented.
+Dapper keeps persistence lightweight and explicit. SQLite is simple for local development and demo usage. The repository stores tags, metadata, and classification keywords as JSON text and uses parameterized SQL for all writes and lookups.
+
+SQLite connections enable WAL mode, `synchronous=NORMAL`, and a 5-second `busy_timeout`. Phase 7 integration tests exercise at least 20 parallel creates followed by 20 parallel updates and assert no lost tickets. This is sufficient for local/demo concurrency, but SQLite still allows only one writer at a time; sustained production write-heavy workloads should move to a server database or add a queue/retry policy around write paths.
 
 ### OpenAPI and Scalar
 
@@ -184,5 +173,6 @@ The API layer validates request DTOs with DataAnnotations before sending command
 
 - Keep parsers streaming or bounded when importing larger files.
 - Use repository methods that support filtered queries at the database level instead of filtering all tickets in memory.
-- Add indexes for common filters such as `category`, `priority`, `status`, and `created_at` once the schema exists.
-- Measure bulk import and classification behavior in the performance tests required by [TASKS.md](../TASKS.md).
+- Use indexes for common filters such as `category`, `priority`, and `status`.
+- Keep auto-classification keyword-based and in-process; it is deterministic and fast enough for create-time classification in the current homework scope.
+- Phase 7 performance tests measure bulk import, auto-classification, and filtered list behavior under documented local thresholds.
