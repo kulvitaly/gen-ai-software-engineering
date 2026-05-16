@@ -4,7 +4,7 @@ This document describes the public API surface for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The project is currently at **Phase 0** of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The API application starts successfully, exposes health checks, and publishes OpenAPI/Scalar documentation. Ticket management endpoints are planned but not implemented yet.
+The project is currently through **Phase 1** of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The API application starts successfully, exposes health checks, and publishes OpenAPI/Scalar documentation. The ticket domain model exists in code, but ticket management HTTP endpoints are still planned and not implemented yet.
 
 Base development URLs:
 
@@ -112,7 +112,9 @@ Expected response includes:
 
 ## Ticket Model
 
-The planned ticket model follows [TASKS.md](../TASKS.md):
+The domain model is implemented under `src/Domain/Tickets`. The API DTOs will be mapped from this model in later phases.
+
+The ticket model follows [TASKS.md](../TASKS.md):
 
 ```json
 {
@@ -140,7 +142,7 @@ The planned ticket model follows [TASKS.md](../TASKS.md):
 
 ## Error Response Format
 
-The final API should use a consistent JSON error response. Prefer ASP.NET Core `ProblemDetails` for validation and not-found errors:
+The final API should use a consistent JSON error response. Prefer ASP.NET Core `ProblemDetails` for validation and not-found errors. Domain validation currently returns structured validation errors with a `Field` and `Message`; the API layer should map those errors into this response shape:
 
 ```json
 {

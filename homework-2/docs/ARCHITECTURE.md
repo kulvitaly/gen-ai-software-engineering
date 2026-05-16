@@ -4,12 +4,13 @@ This document outlines the target architecture for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The repository is currently at **Phase 0**:
+The repository is currently through **Phase 1**:
 
 - The solution contains `Domain`, `Application`, `Infrastructure`, `API`, and `Tests`.
 - The API starts successfully and exposes `/health`, OpenAPI JSON, and Scalar UI.
 - Dependency injection extension points exist in `Application` and `Infrastructure`.
-- Ticket domain entities, persistence, CQRS handlers, import, and classification are still planned.
+- Ticket domain entities, enums, metadata, and validation result types are implemented under `src/Domain/Tickets`.
+- Persistence, CQRS handlers, import, and classification are still planned.
 
 ## High-Level Architecture
 
@@ -34,15 +35,17 @@ graph TD
 
 The domain layer is the core of the system. It should remain independent of ASP.NET Core, Dapper, SQLite, MediatR, and other infrastructure packages.
 
-Current Phase 0 contents:
+Current contents:
 
 - `DomainAssemblyMarker` for test and dependency wiring verification.
+- `Ticket` entity.
+- `TicketDraft` input model for domain creation.
+- `TicketMetadata`.
+- Ticket category, priority, status, source, and device-type enums.
+- Domain validation rules that do not depend on web or database concerns.
 
 Planned contents:
 
-- `Ticket` entity.
-- Ticket category, priority, status, source, and device-type enums.
-- Domain validation rules that do not depend on web or database concerns.
 - Classification-related value objects if needed.
 
 ### Application Layer

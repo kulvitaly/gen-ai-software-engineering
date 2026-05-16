@@ -113,17 +113,17 @@ While implementing phases, fill placeholders in:
 
 **Layer:** [src/Domain](../src/Domain) only (no persistence attributes).
 
-- [ ] **RED** — Failing tests in `TicketModelTests.cs` for [TASKS.md](../TASKS.md) ticket shape:
-  - [ ] Required fields: `customer_id`, `customer_email`, `customer_name`, `subject`, `description`, category, priority, status, tags, metadata.
-  - [ ] **Email** format validation.
-  - [ ] **Subject** length **1–200**; **description** **10–2000**.
-  - [ ] **Enums**: `category` (`account_access | technical_issue | billing_question | feature_request | bug_report | other`), `priority`, `status`.
-  - [ ] **Metadata**: `source`, optional `browser`, `device_type` enum.
-  - [ ] **Timestamps**: `created_at`, `updated_at`; `resolved_at` nullable.
-  - [ ] **Id**: UUID string on create (test factory or builder).
-- [ ] **GREEN**: Implement entity (e.g., `Ticket`), value objects if used, enums, and factory/validation helpers consumed later by FluentValidation.
-- [ ] **REFACTOR**: Keep domain pure; validation rules readable and test-named.
-- [ ] **Coverage**: **Line coverage ≥ 85%** for **Domain** assembly.
+- [x] **RED** — Failing tests in `TicketModelTests.cs` for [TASKS.md](../TASKS.md) ticket shape:
+  - [x] Required fields: `customer_id`, `customer_email`, `customer_name`, `subject`, `description`, category, priority, status, tags, metadata.
+  - [x] **Email** format validation.
+  - [x] **Subject** length **1–200**; **description** **10–2000**.
+  - [x] **Enums**: `category` (`account_access | technical_issue | billing_question | feature_request | bug_report | other`), `priority`, `status`.
+  - [x] **Metadata**: `source`, optional `browser`, `device_type` enum.
+  - [x] **Timestamps**: `created_at`, `updated_at`; `resolved_at` nullable.
+  - [x] **Id**: UUID string on create (test factory or builder).
+- [x] **GREEN**: Implement entity (e.g., `Ticket`), value objects if used, enums, and factory/validation helpers consumed later by FluentValidation.
+- [x] **REFACTOR**: Keep domain pure; validation rules readable and test-named.
+- [x] **Coverage**: **Line coverage ≥ 85%** for **Domain** assembly.
 
 ---
 

@@ -4,12 +4,13 @@ This document provides guidance for testing the Intelligent Customer Support Sys
 
 ## Current Implementation Status
 
-The project is currently at **Phase 0**:
+The project is currently through **Phase 1**:
 
 - The automated suite contains smoke tests in `tests/Tests/Phase0SmokeTests.cs`.
 - The tests verify layer references and the `/health` endpoint.
+- `tests/Tests/TicketModelTests.cs` covers the domain ticket model and validation rules.
 - Coverage enforcement is configured in `tests/Tests/Tests.csproj` with an **85% total line coverage** threshold.
-- Full ticket, import, classification, integration, and performance tests are planned in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+- Persistence, API ticket endpoints, import, classification, integration, and performance tests are planned in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 ## Test Pyramid Diagram
 
@@ -44,6 +45,7 @@ Current coverage behavior:
 - `coverlet.msbuild` fails the test command if total line coverage drops below **85%**.
 - Generated source files under `obj/**/*.cs` are excluded from coverage.
 - The Cobertura report is generated under the test project when coverage is collected.
+- Latest Phase 1 verification: **17 tests passed**, total line coverage **90.82%**, Domain line coverage **89.83%**.
 
 ## Generate HTML Code Coverage Report
 
@@ -112,7 +114,7 @@ Open API documentation:
 The final test suite must satisfy [TASKS.md](../TASKS.md):
 
 - `TicketApiTests.cs`: 11 API endpoint tests.
-- `TicketModelTests.cs`: 9 domain/model validation tests.
+- `TicketModelTests.cs`: 9 domain/model validation areas (**implemented in Phase 1**).
 - `ImportCsvTests.cs`: 6 CSV parsing/import tests.
 - `ImportJsonTests.cs`: 5 JSON parsing/import tests.
 - `ImportXmlTests.cs`: 5 XML parsing/import tests.

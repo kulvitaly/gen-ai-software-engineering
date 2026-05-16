@@ -34,6 +34,8 @@ yarn-error.log*
 coverage/
 coverage-report/
 **/coverage-report/
+coverage.cobertura.xml
+**/coverage.cobertura.xml
 .nyc_output/
 htmlcov/
 .coverage
