@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Tickets.Import;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +18,9 @@ public static class ApplicationServiceCollectionExtensions
             configuration.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly));
         services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
         services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<ITicketImportParser, CsvTicketImportParser>();
+        services.AddSingleton<ITicketImportParser, JsonTicketImportParser>();
+        services.AddSingleton<ITicketImportParser, XmlTicketImportParser>();
 
         return services;
     }

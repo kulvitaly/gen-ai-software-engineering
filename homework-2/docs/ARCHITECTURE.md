@@ -4,7 +4,7 @@ This document outlines the target architecture for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The repository is currently through **Phase 4**:
+The repository is currently through **Phase 5**:
 
 - The solution contains `Domain`, `Application`, `Infrastructure`, `API`, and `Tests`.
 - The API starts successfully and exposes `/health`, OpenAPI JSON, and Scalar UI.
@@ -13,7 +13,8 @@ The repository is currently through **Phase 4**:
 - `ITicketRepository` is defined in Application and implemented by a Dapper-backed SQLite repository in Infrastructure.
 - CQRS handlers, FluentValidation validators, application result types, and ticket DTOs are implemented for create, get, list, update, and delete.
 - REST ticket CRUD endpoints are implemented with Minimal APIs, DataAnnotations request validation, snake_case JSON, and MediatR delegation.
-- Import and classification are still planned.
+- CSV, JSON, and XML import parsers are implemented in Application with per-record errors and a raw-body `POST /tickets/import` endpoint.
+- Classification is still planned.
 
 ## High-Level Architecture
 
@@ -65,10 +66,11 @@ Current contents:
 - Ticket commands and queries for create, get, list, update, and delete.
 - FluentValidation validators and MediatR handlers for ticket commands and queries.
 - `IClock` abstraction for deterministic timestamp handling in tests.
+- Import parsers for CSV, JSON, and XML plus an import command handler that returns total, successful, and failed record summaries.
 
 Planned contents:
 
-- CQRS handlers for ticket import and auto-classify.
+- CQRS handlers for ticket auto-classify.
 - Cross-cutting validation behavior if handler-level validation becomes repetitive.
 
 ### Infrastructure Layer
@@ -101,11 +103,11 @@ Current contents:
 - `GET /tickets/{id}`
 - `PUT /tickets/{id}`
 - `DELETE /tickets/{id}`
+- `POST /tickets/import`
 - DataAnnotations request models for HTTP input validation.
 
 Planned contents:
 
-- Multi-format import endpoint.
 - Auto-classification endpoint.
 - Consistent `ProblemDetails` or equivalent JSON error responses.
 

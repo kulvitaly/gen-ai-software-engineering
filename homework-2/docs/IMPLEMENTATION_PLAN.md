@@ -177,15 +177,15 @@ While implementing phases, fill placeholders in:
 
 **Layers:** Application (handler + parsers), API
 
-- [ ] **RED** — Fixtures in `tests/fixtures/`:
-  - [ ] **CSV**: valid multi-row; missing header; bad email row; quoted fields; partial success.
-  - [ ] **JSON**: array of tickets; wrapper object; invalid schema; empty array.
-  - [ ] **XML**: valid list; malformed XML; wrong root/elements.
-- [ ] **GREEN**:
-  - [ ] Parsers return **DTOs + per-row errors** (no half-insert without summary).
-  - [ ] **Import handler** returns summary: `total`, `successful`, `failed` with **error details** per failed record ([TASKS.md](../TASKS.md)).
-  - [ ] `POST /tickets/import` — multipart or raw body (choose one; document in API_REFERENCE); unusable file → `400`; valid file with row failures → **documented** success response with failures list.
-- [ ] **Coverage**: **≥ 85%**; cover every parser branch and API error path.
+- [x] **RED** — Fixtures in `tests/fixtures/`:
+  - [x] **CSV**: valid multi-row; missing header; bad email row; quoted fields; partial success.
+  - [x] **JSON**: array of tickets; wrapper object; invalid schema; empty array.
+  - [x] **XML**: valid list; malformed XML; wrong root/elements.
+- [x] **GREEN**:
+  - [x] Parsers return **DTOs + per-row errors** (no half-insert without summary).
+  - [x] **Import handler** returns summary: `total`, `successful`, `failed` with **error details** per failed record ([TASKS.md](../TASKS.md)).
+  - [x] `POST /tickets/import` — multipart or raw body (choose one; document in API_REFERENCE); unusable file → `400`; valid file with row failures → **documented** success response with failures list.
+- [x] **Coverage**: **≥ 85%**; cover every parser branch and API error path.
 
 ---
 

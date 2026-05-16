@@ -12,6 +12,8 @@ internal static class TicketEndpoints
         var group = endpoints.MapGroup("/tickets")
             .WithTags("Tickets");
 
+        group.MapPost("/import", Import)
+            .WithName("ImportTickets");
         group.MapPost("/", Create)
             .WithName("CreateTicket");
         group.MapGet("/", List)
@@ -24,6 +26,29 @@ internal static class TicketEndpoints
             .WithName("DeleteTicket");
 
         return endpoints;
+    }
+
+    private static async Task<Results<Ok<ImportTicketsApiResponse>, ValidationProblem>> Import(
+        string? format,
+        HttpRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        if (!TicketContracts.TryParseImportFormat(format, out var importFormat))
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["format"] = ["Format must be one of: csv, json, xml."]
+            });
+        }
+
+        using var reader = new StreamReader(request.Body);
+        var content = await reader.ReadToEndAsync(cancellationToken);
+        var result = await sender.Send(new ImportTicketsCommand(importFormat, content), cancellationToken);
+
+        return result.Status == ApplicationResultStatus.Success
+            ? TypedResults.Ok(result.Value!.ToResponse())
+            : ApiValidation.FromErrors(result.Errors);
     }
 
     private static async Task<Results<Created<TicketResponse>, ValidationProblem>> Create(

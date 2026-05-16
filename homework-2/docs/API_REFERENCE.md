@@ -4,7 +4,7 @@ This document describes the public API surface for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The project is currently through **Phase 4** of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The API application starts successfully, exposes health checks, publishes OpenAPI/Scalar documentation, and implements ticket CRUD endpoints.
+The project is currently through **Phase 5** of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The API application starts successfully, exposes health checks, publishes OpenAPI/Scalar documentation, implements ticket CRUD endpoints, and supports CSV/JSON/XML ticket imports.
 
 Base development URLs:
 
@@ -82,7 +82,14 @@ curl -X POST http://localhost:5077/tickets \
 
 Bulk import tickets from CSV, JSON, or XML.
 
-Expected response includes:
+The endpoint accepts the raw file body and a required `format` query string: `csv`, `json`, or `xml`.
+
+**Responses**
+
+- `200 OK` with an import summary. Partial row failures are reported in the `failed` array; valid rows are still saved.
+- `400 Bad Request` when `format` is unsupported or the file cannot be parsed as the selected format.
+
+**Response**
 
 ```json
 {
@@ -90,11 +97,19 @@ Expected response includes:
   "successful": 2,
   "failed": [
     {
-      "record": 3,
+      "record_number": 3,
       "errors": ["customer_email must be a valid email address"]
     }
   ]
 }
+```
+
+**cURL**
+
+```bash
+curl -X POST "http://localhost:5077/tickets/import?format=csv" \
+  -H "Content-Type: text/csv" \
+  --data-binary @tests/fixtures/valid_tickets.csv
 ```
 
 ### GET /tickets
@@ -251,4 +266,4 @@ Validation errors use ASP.NET Core validation problem responses:
 
 - Keep the OpenAPI document and this file aligned.
 - Keep cURL examples runnable against `http://localhost:5077`.
-- Add import and auto-classification endpoint examples when those phases are implemented.
+- Add auto-classification endpoint examples when that phase is implemented.

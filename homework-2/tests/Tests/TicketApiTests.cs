@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Application.Tickets;
 using Infrastructure.Persistence;
@@ -248,6 +249,59 @@ public sealed class TicketApiTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ImportTickets_WithPartialCsvFailures_ReturnsSummary()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var csv = string.Join(
+            Environment.NewLine,
+            "customer_id,customer_email,customer_name,subject,description,category,priority,status,tags,metadata.source,metadata.browser,metadata.device_type,assigned_to",
+            "customer-1,ada@example.com,Ada Lovelace,Cannot access account,I cannot access my customer account after resetting my password.,account_access,high,new,account;login,web_form,Edge,desktop,",
+            "customer-2,bad-email,Grace Hopper,Billing invoice question,I need help understanding the latest annual invoice.,billing_question,medium,new,billing;invoice,email,Firefox,desktop,");
+
+        // Act
+        var response = await client.PostAsync("/tickets/import?format=csv", Text(csv, "text/csv"));
+        var summary = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, summary.RootElement.GetProperty("total").GetInt32());
+        Assert.Equal(1, summary.RootElement.GetProperty("successful").GetInt32());
+        var failure = Assert.Single(summary.RootElement.GetProperty("failed").EnumerateArray());
+        Assert.Equal(2, failure.GetProperty("record_number").GetInt32());
+    }
+
+    [Fact]
+    public async Task ImportTickets_WithUnusableFile_ReturnsValidationProblem()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/tickets/import?format=csv", Text("customer_id,customer_email", "text/csv"));
+        var problem = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("Content", out _));
+    }
+
+    [Fact]
+    public async Task ImportTickets_WithUnsupportedFormat_ReturnsValidationProblem()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/tickets/import?format=yaml", Text("tickets: []", "text/plain"));
+        var problem = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("format", out _));
+    }
+
     public void Dispose()
     {
         _factory.Dispose();
@@ -271,6 +325,11 @@ public sealed class TicketApiTests : IDisposable
     {
         var stream = await response.Content.ReadAsStreamAsync();
         return await JsonDocument.ParseAsync(stream);
+    }
+
+    private static StringContent Text(string content, string mediaType)
+    {
+        return new StringContent(content, Encoding.UTF8, mediaType);
     }
 
     private static CreateTicketApiRequest ValidCreateRequest()

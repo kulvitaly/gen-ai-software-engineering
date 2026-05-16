@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Application.Tickets;
+using Application.Tickets.Import;
 using Domain.Tickets;
 
 namespace API.Tickets;
@@ -54,6 +55,10 @@ internal sealed record TicketResponse(
 internal sealed record TicketMetadataResponse(string Source, string? Browser, string DeviceType);
 
 internal sealed record DeleteTicketApiResponse(Guid Id);
+
+internal sealed record ImportTicketsApiResponse(int Total, int Successful, IReadOnlyList<ImportTicketFailureResponse> Failed);
+
+internal sealed record ImportTicketFailureResponse(int RecordNumber, IReadOnlyList<string> Errors);
 
 internal static class TicketContracts
 {
@@ -110,6 +115,40 @@ internal static class TicketContracts
                 ticket.Metadata.Source!.Value.ToApiValue(),
                 ticket.Metadata.Browser,
                 ticket.Metadata.DeviceType!.Value.ToApiValue()));
+    }
+
+    public static ImportTicketsApiResponse ToResponse(this ImportTicketsResponse response)
+    {
+        return new ImportTicketsApiResponse(
+            response.Total,
+            response.Successful,
+            response.Failed
+                .Select(failure => new ImportTicketFailureResponse(failure.RecordNumber, failure.Errors))
+                .ToArray());
+    }
+
+    public static bool TryParseImportFormat(string? value, out TicketImportFormat format)
+    {
+        format = default;
+        if (string.Equals(value, "csv", StringComparison.OrdinalIgnoreCase))
+        {
+            format = TicketImportFormat.Csv;
+            return true;
+        }
+
+        if (string.Equals(value, "json", StringComparison.OrdinalIgnoreCase))
+        {
+            format = TicketImportFormat.Json;
+            return true;
+        }
+
+        if (string.Equals(value, "xml", StringComparison.OrdinalIgnoreCase))
+        {
+            format = TicketImportFormat.Xml;
+            return true;
+        }
+
+        return false;
     }
 
     private static TicketMetadata ToDomain(this TicketMetadataRequest metadata)

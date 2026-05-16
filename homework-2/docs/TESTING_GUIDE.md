@@ -4,7 +4,7 @@ This document provides guidance for testing the Intelligent Customer Support Sys
 
 ## Current Implementation Status
 
-The project is currently through **Phase 4**:
+The project is currently through **Phase 5**:
 
 - The automated suite contains smoke tests in `tests/Tests/Phase0SmokeTests.cs`.
 - The tests verify layer references and the `/health` endpoint.
@@ -12,8 +12,10 @@ The project is currently through **Phase 4**:
 - `tests/Tests/TicketRepositoryTests.cs` covers SQLite schema bootstrap and repository CRUD behavior.
 - `tests/Tests/TicketHandlerTests.cs` covers application commands and queries for create, get, list, update, and delete.
 - `tests/Tests/TicketApiTests.cs` covers REST ticket CRUD endpoints, filtering, DataAnnotations validation, and not-found responses.
+- `tests/Tests/ImportCsvTests.cs`, `ImportJsonTests.cs`, and `ImportXmlTests.cs` cover parser branches and import summaries.
+- `tests/fixtures/` contains valid and invalid CSV, JSON, and XML import samples.
 - Coverage enforcement is configured in `tests/Tests/Tests.csproj` with an **85% total line coverage** threshold.
-- Import, classification, integration, and performance tests are planned in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+- Classification, integration, and performance tests are planned in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 ## Test Pyramid Diagram
 
@@ -48,7 +50,7 @@ Current coverage behavior:
 - `coverlet.msbuild` fails the test command if total line coverage drops below **85%**.
 - Generated source files under `obj/**/*.cs` are excluded from coverage.
 - The Cobertura report is generated under the test project when coverage is collected.
-- Latest Phase 4 verification: **44 tests passed**, total line coverage **93.36%**, API line coverage **91.52%**, Application line coverage **92.50%**, Domain line coverage **90.13%**, Infrastructure line coverage **99.26%**.
+- Latest Phase 5 verification: **63 tests passed**, total line coverage **93.65%**, API line coverage **92.67%**, Application line coverage **93.12%**, Domain line coverage **90.13%**, Infrastructure line coverage **99.26%**.
 
 ## Generate HTML Code Coverage Report
 

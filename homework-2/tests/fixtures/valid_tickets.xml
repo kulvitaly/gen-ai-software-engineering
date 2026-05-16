@@ -1,0 +1,21 @@
+<tickets>
+  <ticket>
+    <customer_id>customer-1</customer_id>
+    <customer_email>ada@example.com</customer_email>
+    <customer_name>Ada Lovelace</customer_name>
+    <subject>Cannot access account</subject>
+    <description>I cannot access my customer account after resetting my password.</description>
+    <category>account_access</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>account</tag>
+      <tag>login</tag>
+    </tags>
+    <metadata>
+      <source>web_form</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+</tickets>
