@@ -4,7 +4,7 @@ This document outlines the target architecture for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The repository is currently through **Phase 7**:
+The repository is currently through **Phase 8**:
 
 - The solution contains `Domain`, `Application`, `Infrastructure`, `API`, and `Tests`.
 - The API starts successfully and exposes `/health`, OpenAPI JSON, and Scalar UI.
@@ -16,6 +16,7 @@ The repository is currently through **Phase 7**:
 - CSV, JSON, and XML import parsers are implemented in Application with per-record errors and a raw-body `POST /tickets/import` endpoint.
 - Auto-classification is implemented with keyword rules, classification metadata persistence, decision logging, and a `POST /tickets/{id}/auto-classify` endpoint.
 - Integration and performance tests cover full HTTP workflows, concurrent operations, import throughput, classification throughput, and filtered list performance.
+- Final deliverables include sample CSV/JSON/XML data, a coverage screenshot, and README/documentation updates.
 
 ## High-Level Architecture
 
@@ -28,10 +29,71 @@ The project follows **Clean Architecture** principles, with dependencies flowing
 
 ```mermaid
 graph TD
-    API[Presentation_API_Scalar_OpenAPI] --> APP[Application_CQRS_MediatR]
-    APP --> DOM[Domain_Entities_Rules]
-    APP --> INF[Infrastructure_Dapper_SQLite]
+    Client[API Client] --> API[Presentation API<br/>Minimal APIs + Scalar + OpenAPI]
+    API --> APP[Application<br/>CQRS + MediatR + FluentValidation]
+    APP --> DOM[Domain<br/>Ticket Aggregate + Validation Rules]
+    APP --> INF[Infrastructure<br/>Dapper Repository]
+    INF --> DB[(SQLite<br/>tickets table)]
     INF --> DOM
+```
+
+## Container View
+
+```mermaid
+flowchart LR
+    subgraph External
+        User[API Consumer]
+        Files[CSV JSON XML Files]
+    end
+
+    subgraph WebAPI["src/API"]
+        Endpoints[TicketEndpoints]
+        Contracts[HTTP Contracts<br/>snake_case JSON]
+        Docs[OpenAPI + Scalar]
+    end
+
+    subgraph Application["src/Application"]
+        Commands[Commands and Queries]
+        Handlers[MediatR Handlers]
+        Validators[FluentValidation Validators]
+        Importers[Import Parsers]
+        Classifier[TicketClassifier]
+        RepositoryPort[ITicketRepository]
+    end
+
+    subgraph Domain["src/Domain"]
+        Ticket[Ticket]
+        Draft[TicketDraft]
+        Metadata[TicketMetadata]
+        Classification[TicketClassification]
+        Enums[Ticket Enums]
+    end
+
+    subgraph Infrastructure["src/Infrastructure"]
+        Repo[SqliteTicketRepository]
+        Connection[SqliteConnectionFactory]
+        Database[(SQLite Database)]
+    end
+
+    User --> Endpoints
+    Files --> Endpoints
+    Endpoints --> Contracts
+    Endpoints --> Commands
+    Commands --> Validators
+    Commands --> Handlers
+    Handlers --> Ticket
+    Handlers --> Importers
+    Handlers --> Classifier
+    Handlers --> RepositoryPort
+    RepositoryPort --> Repo
+    Repo --> Connection
+    Connection --> Database
+    Repo --> Ticket
+    Ticket --> Draft
+    Ticket --> Metadata
+    Ticket --> Classification
+    Ticket --> Enums
+    User -. explores .-> Docs
 ```
 
 ## Component Descriptions
@@ -98,6 +160,30 @@ Current contents:
 - DataAnnotations request models for HTTP input validation.
 - Consistent `ProblemDetails` or equivalent JSON error responses.
 
+## Endpoint To Use Case Map
+
+```mermaid
+flowchart TD
+    PostTicket["POST /tickets"] --> CreateCommand[CreateTicketCommand]
+    PostTicketAuto["POST /tickets?auto_classify=true"] --> CreateCommand
+    GetTickets["GET /tickets"] --> ListQuery[ListTicketsQuery]
+    GetTicket["GET /tickets/{id}"] --> GetQuery[GetTicketQuery]
+    PutTicket["PUT /tickets/{id}"] --> UpdateCommand[UpdateTicketCommand]
+    DeleteTicket["DELETE /tickets/{id}"] --> DeleteCommand[DeleteTicketCommand]
+    ImportTickets["POST /tickets/import?format=csv|json|xml"] --> ImportCommand[ImportTicketsCommand]
+    AutoClassify["POST /tickets/{id}/auto-classify"] --> ClassifyCommand[AutoClassifyTicketCommand]
+
+    CreateCommand --> Repository[ITicketRepository]
+    ListQuery --> Repository
+    GetQuery --> Repository
+    UpdateCommand --> Repository
+    DeleteCommand --> Repository
+    ImportCommand --> Parser[ITicketImportParser]
+    ImportCommand --> Repository
+    ClassifyCommand --> Classifier[ITicketClassifier]
+    ClassifyCommand --> Repository
+```
+
 ## Request Flow
 
 ```mermaid
@@ -135,6 +221,75 @@ sequenceDiagram
     Repository-->>ImportHandler: Saved ticket ids
     ImportHandler-->>API: Import summary
     API-->>Client: Summary with successes and failures
+```
+
+## Auto-Classification Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as TicketEndpoints
+    participant Handler as AutoClassifyTicketCommandHandler
+    participant Repo as ITicketRepository
+    participant Classifier as TicketClassifier
+    participant Domain as Ticket
+    participant DB as SQLite
+    participant Log as ILogger
+
+    Client->>API: POST /tickets/{id}/auto-classify
+    API->>Handler: AutoClassifyTicketCommand
+    Handler->>Repo: GetById(id)
+    Repo->>DB: SELECT ticket
+    DB-->>Repo: ticket row
+    Repo-->>Handler: Ticket
+    Handler->>Classifier: Classify(ticket)
+    Classifier-->>Handler: category, priority, confidence, reasoning, keywords
+    Handler->>Domain: Rehydrate with classification metadata
+    Handler->>Repo: Update(ticket)
+    Repo->>DB: UPDATE category, priority, classification fields
+    Handler->>Log: decision with ticket id and outcome
+    Handler-->>API: ClassificationDto
+    API-->>Client: 200 OK classification response
+```
+
+## Persistence Model
+
+```mermaid
+erDiagram
+    TICKETS {
+        text id PK
+        text customer_id
+        text customer_email
+        text customer_name
+        text subject
+        text description
+        text category
+        text priority
+        text status
+        text created_at
+        text updated_at
+        text resolved_at
+        text assigned_to
+        text tags_json
+        text metadata_json
+        real classification_confidence
+        text classification_reasoning
+        text classification_keywords_json
+    }
+```
+
+SQLite stores simple scalar fields directly and stores `tags`, metadata, and classification keywords as JSON text. The repository rehydrates rows into the domain model and validates stored enum/timestamp values before returning tickets to the application layer.
+
+## Test And Quality Gates
+
+```mermaid
+flowchart TD
+    Unit[Unit Tests<br/>Domain, handlers, parsers, classifier] --> Coverage[Coverlet<br/>total line coverage >= 85%]
+    ApiTests[API Tests<br/>Minimal API + WebApplicationFactory] --> Coverage
+    Integration[Integration Tests<br/>lifecycle, import, classify, concurrency] --> Coverage
+    Performance[NBomber Performance Tests<br/>0% failures + latency gates] --> Coverage
+    Coverage --> Report[Coverage Report<br/>coverage.cobertura.xml + HTML]
+    Report --> Screenshot[docs/screenshots/test_coverage.png]
 ```
 
 ## Design Decisions and Trade-Offs

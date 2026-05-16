@@ -223,13 +223,13 @@ While implementing phases, fill placeholders in:
 
 ## Phase 8 — Deliverables, coverage screenshot, README
 
-- [ ] **Sample data** (per [TASKS.md](../TASKS.md)):
-  - [ ] `sample_tickets.csv` — **50** rows.
-  - [ ] `sample_tickets.json` — **20** objects.
-  - [ ] `sample_tickets.xml` — **30** tickets.
-  - [ ] Invalid sample files for negative tests (names/locations documented in README and TESTING_GUIDE).
-- [ ] **Coverage report** + screenshot **[docs/screenshots/test_coverage.png](screenshots/test_coverage.png)** showing **> 85%**.
-- [ ] **README.md** — replace Homework 1 boilerplate: Homework 2 overview, features, Mermaid architecture (README requirement), setup, `dotnet test` + coverage, folder structure, link to docs.
+- [x] **Sample data** (per [TASKS.md](../TASKS.md)):
+  - [x] `sample_tickets.csv` — **50** rows.
+  - [x] `sample_tickets.json` — **20** objects.
+  - [x] `sample_tickets.xml` — **30** tickets.
+  - [x] Invalid sample files for negative tests (names/locations documented in README and TESTING_GUIDE).
+- [x] **Coverage report** + screenshot **[docs/screenshots/test_coverage.png](screenshots/test_coverage.png)** showing **> 85%**.
+- [x] **README.md** — replace Homework 1 boilerplate: Homework 2 overview, features, Mermaid architecture (README requirement), setup, `dotnet test` + coverage, folder structure, link to docs.
 
 ---
 

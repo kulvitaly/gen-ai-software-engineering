@@ -63,8 +63,18 @@ If you run the HTTPS profile, use the same paths on `https://localhost:7076`.
 dotnet test CustomerSupportSystem.slnx
 ```
 
-Run tests with the Phase 0 coverage gate:
+Run tests with the 85% coverage gate:
 
 ```bash
 dotnet test CustomerSupportSystem.slnx /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Threshold=85 /p:ThresholdType=line /p:ThresholdStat=total
 ```
+
+## Sample Data
+
+Import-ready sample files are available under `tests/fixtures/`:
+
+- `sample_tickets.csv`
+- `sample_tickets.json`
+- `sample_tickets.xml`
+
+Invalid import examples are also available as `invalid_tickets.csv`, `invalid_tickets.json`, and `invalid_tickets.xml`.

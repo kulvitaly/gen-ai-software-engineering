@@ -1,0 +1,402 @@
+﻿[
+    {
+        "customer_id":  "sample-customer-1",
+        "customer_email":  "sample1@example.com",
+        "customer_name":  "Sample Customer 1",
+        "subject":  "Cannot access account",
+        "description":  "I cannot access my account after resetting my password and need assistance.",
+        "category":  "account_access",
+        "priority":  "urgent",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "account_access"
+                 ],
+        "metadata":  {
+                         "source":  "web_form",
+                         "browser":  "Edge",
+                         "device_type":  "desktop"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-2",
+        "customer_email":  "sample2@example.com",
+        "customer_name":  "Sample Customer 2",
+        "subject":  "Application crash on save",
+        "description":  "The application shows an error and crashes when I save a ticket.",
+        "category":  "technical_issue",
+        "priority":  "high",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "technical_issue"
+                 ],
+        "metadata":  {
+                         "source":  "email",
+                         "browser":  "Edge",
+                         "device_type":  "mobile"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-3",
+        "customer_email":  "sample3@example.com",
+        "customer_name":  "Sample Customer 3",
+        "subject":  "Invoice refund question",
+        "description":  "I need help understanding a payment invoice and refund status.",
+        "category":  "billing_question",
+        "priority":  "medium",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "billing_question"
+                 ],
+        "metadata":  {
+                         "source":  "api",
+                         "browser":  "Edge",
+                         "device_type":  "tablet"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-4",
+        "customer_email":  "sample4@example.com",
+        "customer_name":  "Sample Customer 4",
+        "subject":  "Feature suggestion for dashboard",
+        "description":  "Please consider this enhancement suggestion for the dashboard workflow.",
+        "category":  "feature_request",
+        "priority":  "low",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "feature_request"
+                 ],
+        "metadata":  {
+                         "source":  "chat",
+                         "browser":  "Edge",
+                         "device_type":  "desktop"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-5",
+        "customer_email":  "sample5@example.com",
+        "customer_name":  "Sample Customer 5",
+        "subject":  "Bug reproduction steps",
+        "description":  "Here are the steps to reproduce the defect in the customer portal.",
+        "category":  "bug_report",
+        "priority":  "urgent",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "bug_report"
+                 ],
+        "metadata":  {
+                         "source":  "phone",
+                         "browser":  "Edge",
+                         "device_type":  "mobile"
+                     },
+        "assigned_to":  "agent-5"
+    },
+    {
+        "customer_id":  "sample-customer-6",
+        "customer_email":  "sample6@example.com",
+        "customer_name":  "Sample Customer 6",
+        "subject":  "General support question",
+        "description":  "I have a general support question about my customer profile.",
+        "category":  "other",
+        "priority":  "high",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "other"
+                 ],
+        "metadata":  {
+                         "source":  "web_form",
+                         "browser":  "Edge",
+                         "device_type":  "tablet"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-7",
+        "customer_email":  "sample7@example.com",
+        "customer_name":  "Sample Customer 7",
+        "subject":  "Cannot access account",
+        "description":  "I cannot access my account after resetting my password and need assistance.",
+        "category":  "account_access",
+        "priority":  "medium",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "account_access"
+                 ],
+        "metadata":  {
+                         "source":  "email",
+                         "browser":  "Edge",
+                         "device_type":  "desktop"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-8",
+        "customer_email":  "sample8@example.com",
+        "customer_name":  "Sample Customer 8",
+        "subject":  "Application crash on save",
+        "description":  "The application shows an error and crashes when I save a ticket.",
+        "category":  "technical_issue",
+        "priority":  "low",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "technical_issue"
+                 ],
+        "metadata":  {
+                         "source":  "api",
+                         "browser":  "Edge",
+                         "device_type":  "mobile"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-9",
+        "customer_email":  "sample9@example.com",
+        "customer_name":  "Sample Customer 9",
+        "subject":  "Invoice refund question",
+        "description":  "I need help understanding a payment invoice and refund status.",
+        "category":  "billing_question",
+        "priority":  "urgent",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "billing_question"
+                 ],
+        "metadata":  {
+                         "source":  "chat",
+                         "browser":  "Edge",
+                         "device_type":  "tablet"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-10",
+        "customer_email":  "sample10@example.com",
+        "customer_name":  "Sample Customer 10",
+        "subject":  "Feature suggestion for dashboard",
+        "description":  "Please consider this enhancement suggestion for the dashboard workflow.",
+        "category":  "feature_request",
+        "priority":  "high",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "feature_request"
+                 ],
+        "metadata":  {
+                         "source":  "phone",
+                         "browser":  "Edge",
+                         "device_type":  "desktop"
+                     },
+        "assigned_to":  "agent-10"
+    },
+    {
+        "customer_id":  "sample-customer-11",
+        "customer_email":  "sample11@example.com",
+        "customer_name":  "Sample Customer 11",
+        "subject":  "Bug reproduction steps",
+        "description":  "Here are the steps to reproduce the defect in the customer portal.",
+        "category":  "bug_report",
+        "priority":  "medium",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "bug_report"
+                 ],
+        "metadata":  {
+                         "source":  "web_form",
+                         "browser":  "Edge",
+                         "device_type":  "mobile"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-12",
+        "customer_email":  "sample12@example.com",
+        "customer_name":  "Sample Customer 12",
+        "subject":  "General support question",
+        "description":  "I have a general support question about my customer profile.",
+        "category":  "other",
+        "priority":  "low",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "other"
+                 ],
+        "metadata":  {
+                         "source":  "email",
+                         "browser":  "Edge",
+                         "device_type":  "tablet"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-13",
+        "customer_email":  "sample13@example.com",
+        "customer_name":  "Sample Customer 13",
+        "subject":  "Cannot access account",
+        "description":  "I cannot access my account after resetting my password and need assistance.",
+        "category":  "account_access",
+        "priority":  "urgent",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "account_access"
+                 ],
+        "metadata":  {
+                         "source":  "api",
+                         "browser":  "Edge",
+                         "device_type":  "desktop"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-14",
+        "customer_email":  "sample14@example.com",
+        "customer_name":  "Sample Customer 14",
+        "subject":  "Application crash on save",
+        "description":  "The application shows an error and crashes when I save a ticket.",
+        "category":  "technical_issue",
+        "priority":  "high",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "technical_issue"
+                 ],
+        "metadata":  {
+                         "source":  "chat",
+                         "browser":  "Edge",
+                         "device_type":  "mobile"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-15",
+        "customer_email":  "sample15@example.com",
+        "customer_name":  "Sample Customer 15",
+        "subject":  "Invoice refund question",
+        "description":  "I need help understanding a payment invoice and refund status.",
+        "category":  "billing_question",
+        "priority":  "medium",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "billing_question"
+                 ],
+        "metadata":  {
+                         "source":  "phone",
+                         "browser":  "Edge",
+                         "device_type":  "tablet"
+                     },
+        "assigned_to":  "agent-15"
+    },
+    {
+        "customer_id":  "sample-customer-16",
+        "customer_email":  "sample16@example.com",
+        "customer_name":  "Sample Customer 16",
+        "subject":  "Feature suggestion for dashboard",
+        "description":  "Please consider this enhancement suggestion for the dashboard workflow.",
+        "category":  "feature_request",
+        "priority":  "low",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "feature_request"
+                 ],
+        "metadata":  {
+                         "source":  "web_form",
+                         "browser":  "Edge",
+                         "device_type":  "desktop"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-17",
+        "customer_email":  "sample17@example.com",
+        "customer_name":  "Sample Customer 17",
+        "subject":  "Bug reproduction steps",
+        "description":  "Here are the steps to reproduce the defect in the customer portal.",
+        "category":  "bug_report",
+        "priority":  "urgent",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "bug_report"
+                 ],
+        "metadata":  {
+                         "source":  "email",
+                         "browser":  "Edge",
+                         "device_type":  "mobile"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-18",
+        "customer_email":  "sample18@example.com",
+        "customer_name":  "Sample Customer 18",
+        "subject":  "General support question",
+        "description":  "I have a general support question about my customer profile.",
+        "category":  "other",
+        "priority":  "high",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "other"
+                 ],
+        "metadata":  {
+                         "source":  "api",
+                         "browser":  "Edge",
+                         "device_type":  "tablet"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-19",
+        "customer_email":  "sample19@example.com",
+        "customer_name":  "Sample Customer 19",
+        "subject":  "Cannot access account",
+        "description":  "I cannot access my account after resetting my password and need assistance.",
+        "category":  "account_access",
+        "priority":  "medium",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "account_access"
+                 ],
+        "metadata":  {
+                         "source":  "chat",
+                         "browser":  "Edge",
+                         "device_type":  "desktop"
+                     },
+        "assigned_to":  null
+    },
+    {
+        "customer_id":  "sample-customer-20",
+        "customer_email":  "sample20@example.com",
+        "customer_name":  "Sample Customer 20",
+        "subject":  "Application crash on save",
+        "description":  "The application shows an error and crashes when I save a ticket.",
+        "category":  "technical_issue",
+        "priority":  "low",
+        "status":  "new",
+        "tags":  [
+                     "sample",
+                     "technical_issue"
+                 ],
+        "metadata":  {
+                         "source":  "phone",
+                         "browser":  "Edge",
+                         "device_type":  "mobile"
+                     },
+        "assigned_to":  "agent-20"
+    }
+]

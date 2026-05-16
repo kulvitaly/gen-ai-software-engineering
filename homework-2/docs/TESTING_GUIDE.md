@@ -4,7 +4,7 @@ This document provides guidance for testing the Intelligent Customer Support Sys
 
 ## Current Implementation Status
 
-The project is currently through **Phase 7**:
+The project is currently through **Phase 8**:
 
 - The automated suite contains smoke tests in `tests/Tests/Phase0SmokeTests.cs`.
 - The tests verify layer references and the `/health` endpoint.
@@ -16,7 +16,7 @@ The project is currently through **Phase 7**:
 - `tests/Tests/CategorizationTests.cs` covers keyword classification, confidence metadata, logging, and manual override behavior.
 - `tests/Tests/IntegrationTests.cs` covers full HTTP workflows, imports, classification, filtering, and 20 parallel creates/updates.
 - `tests/Tests/PerformanceTests.cs` covers benchmark-style budgets for CSV/JSON/XML import, auto-classification, and filtered list queries.
-- `tests/fixtures/` contains valid and invalid CSV, JSON, and XML import samples.
+- `tests/fixtures/` contains valid, invalid, and deliverable-sized CSV, JSON, and XML import samples.
 - Coverage enforcement is configured in `tests/Tests/Tests.csproj` with an **85% total line coverage** threshold.
 
 ## Test Pyramid Diagram
@@ -133,12 +133,13 @@ Total planned tests: **56**.
 
 ## Sample Test Data Locations
 
-Planned sample data files should live under `tests/fixtures/`:
+Sample data files live under `tests/fixtures/`:
 
 - `sample_tickets.csv`: 50 sample tickets in CSV format.
 - `sample_tickets.json`: 20 sample tickets in JSON format.
 - `sample_tickets.xml`: 30 sample tickets in XML format.
-- Invalid CSV, JSON, and XML files for negative test cases.
+- `valid_tickets.csv`, `valid_tickets.json`, `valid_tickets.xml`: compact positive parser fixtures.
+- `invalid_tickets.csv`, `invalid_tickets.json`, `invalid_tickets.xml`: negative import samples for malformed or invalid content.
 
 ## Manual Testing Checklist
 
