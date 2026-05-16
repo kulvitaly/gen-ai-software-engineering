@@ -152,12 +152,12 @@ Planned sample data files should live under `tests/fixtures/`:
 
 ## Performance Benchmarks
 
-Measured locally on Windows from `PerformanceTests.cs`:
+`PerformanceTests.cs` uses NBomber scenarios and xUnit assertions as quality gates. Each scenario requires 0% failed requests and validates average, max, and P95 request execution time.
 
-- Bulk CSV import: 50 tickets in 79 ms, budget 3 seconds.
-- Bulk JSON import: 20 tickets in 1 second, budget 2 seconds.
-- Bulk XML import: 30 tickets in 82 ms, budget 3 seconds.
-- Auto-classification batch behavior: 25 tickets in 338 ms, budget 3 seconds.
-- Filtered list queries: 100 stored tickets filtered in 166 ms, budget 2 seconds.
+- Bulk CSV import: 50 tickets; average <= 1.5 seconds, max <= 3 seconds, P95 <= 3 seconds.
+- Bulk JSON import: 20 tickets; average <= 1 second, max <= 2 seconds, P95 <= 2 seconds.
+- Bulk XML import: 30 tickets; average <= 1.5 seconds, max <= 3 seconds, P95 <= 3 seconds.
+- Auto-classification batch behavior: 25 tickets; average <= 1.5 seconds, max <= 3 seconds, P95 <= 3 seconds.
+- Filtered list queries: 100 stored tickets filtered by category and priority; average <= 500 ms, max <= 2 seconds, P95 <= 2 seconds.
 
-These are benchmark-style regression checks, not production load tests. The detailed performance-only run can fail the coverage gate because it intentionally executes only five tests; use the full `dotnet test` command for coverage verification.
+These are benchmark-style regression checks, not production load tests. A performance-only filtered run can fail the coverage gate because it intentionally executes only five tests; use the full `dotnet test` command for coverage verification.

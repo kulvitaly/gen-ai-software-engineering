@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -8,6 +7,9 @@ using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
+using NBomber.Contracts;
+using NBomber.Contracts.Stats;
+using NBomber.CSharp;
 
 namespace Tests;
 
@@ -17,6 +19,8 @@ public sealed class PerformanceTests : IDisposable
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
+
+    private const double AllowedFailurePercent = 0;
 
     private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
     private readonly WebApplicationFactory<Program> _factory;
@@ -35,61 +39,83 @@ public sealed class PerformanceTests : IDisposable
     }
 
     [Fact]
-    public async Task BulkCsvImport_50Tickets_CompletesUnderThreeSeconds()
+    public void BulkCsvImport_50Tickets_MeetsNBomberQualityGates()
     {
         // Arrange
         using var client = _factory.CreateClient();
+        WarmUp(client);
         var csv = Csv(Enumerable.Range(1, 50).Select(index => CsvRow(index)));
 
         // Act
-        var (elapsed, response) = await Measure(() => client.PostAsync("/tickets/import?format=csv", Text(csv, "text/csv")));
-        var summary = await ReadJson(response);
+        var stepStats = RunSingleStepScenario(
+            "bulk_csv_import_50",
+            "post_csv_import",
+            async () =>
+            {
+                var response = await client.PostAsync("/tickets/import?format=csv", Text(csv, "text/csv"));
+                var summary = await ReadJson(response);
+                return response.StatusCode == HttpStatusCode.OK
+                    && summary.RootElement.GetProperty("successful").GetInt32() == 50;
+            });
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(50, summary.RootElement.GetProperty("successful").GetInt32());
-        Assert.True(elapsed < TimeSpan.FromSeconds(3), $"CSV import took {elapsed.TotalMilliseconds} ms.");
+        AssertQualityGates(stepStats, averageMs: 1_500, maxMs: 3_000, p95Ms: 3_000);
     }
 
     [Fact]
-    public async Task BulkJsonImport_20Tickets_CompletesUnderTwoSeconds()
+    public void BulkJsonImport_20Tickets_MeetsNBomberQualityGates()
     {
         // Arrange
         using var client = _factory.CreateClient();
+        WarmUp(client);
         var json = JsonTickets(20);
 
         // Act
-        var (elapsed, response) = await Measure(() => client.PostAsync("/tickets/import?format=json", Text(json, "application/json")));
-        var summary = await ReadJson(response);
+        var stepStats = RunSingleStepScenario(
+            "bulk_json_import_20",
+            "post_json_import",
+            async () =>
+            {
+                var response = await client.PostAsync("/tickets/import?format=json", Text(json, "application/json"));
+                var summary = await ReadJson(response);
+                return response.StatusCode == HttpStatusCode.OK
+                    && summary.RootElement.GetProperty("successful").GetInt32() == 20;
+            });
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(20, summary.RootElement.GetProperty("successful").GetInt32());
-        Assert.True(elapsed < TimeSpan.FromSeconds(2), $"JSON import took {elapsed.TotalMilliseconds} ms.");
+        AssertQualityGates(stepStats, averageMs: 1_000, maxMs: 2_000, p95Ms: 2_000);
     }
 
     [Fact]
-    public async Task BulkXmlImport_30Tickets_CompletesUnderThreeSeconds()
+    public void BulkXmlImport_30Tickets_MeetsNBomberQualityGates()
     {
         // Arrange
         using var client = _factory.CreateClient();
+        WarmUp(client);
         var xml = XmlTickets(30);
 
         // Act
-        var (elapsed, response) = await Measure(() => client.PostAsync("/tickets/import?format=xml", Text(xml, "application/xml")));
-        var summary = await ReadJson(response);
+        var stepStats = RunSingleStepScenario(
+            "bulk_xml_import_30",
+            "post_xml_import",
+            async () =>
+            {
+                var response = await client.PostAsync("/tickets/import?format=xml", Text(xml, "application/xml"));
+                var summary = await ReadJson(response);
+                return response.StatusCode == HttpStatusCode.OK
+                    && summary.RootElement.GetProperty("successful").GetInt32() == 30;
+            });
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(30, summary.RootElement.GetProperty("successful").GetInt32());
-        Assert.True(elapsed < TimeSpan.FromSeconds(3), $"XML import took {elapsed.TotalMilliseconds} ms.");
+        AssertQualityGates(stepStats, averageMs: 1_500, maxMs: 3_000, p95Ms: 3_000);
     }
 
     [Fact]
-    public async Task AutoClassify_25Tickets_CompletesUnderThreeSeconds()
+    public async Task AutoClassify_25Tickets_MeetsNBomberQualityGates()
     {
         // Arrange
         using var client = _factory.CreateClient();
+        WarmUp(client);
         var created = await Task.WhenAll(Enumerable.Range(1, 25)
             .Select(index => CreateTicket(client, ValidCreateRequest(index) with
             {
@@ -101,18 +127,25 @@ public sealed class PerformanceTests : IDisposable
         var ids = created.Select(ticket => ticket.RootElement.GetProperty("id").GetString()).ToArray();
 
         // Act
-        var (elapsed, responses) = await Measure(() => Task.WhenAll(ids.Select(id => client.PostAsync($"/tickets/{id}/auto-classify", content: null))));
+        var stepStats = RunSingleStepScenario(
+            "auto_classify_25",
+            "post_auto_classify_batch",
+            async () =>
+            {
+                var responses = await Task.WhenAll(ids.Select(id => client.PostAsync($"/tickets/{id}/auto-classify", content: null)));
+                return responses.All(response => response.StatusCode == HttpStatusCode.OK);
+            });
 
         // Assert
-        Assert.All(responses, response => Assert.Equal(HttpStatusCode.OK, response.StatusCode));
-        Assert.True(elapsed < TimeSpan.FromSeconds(3), $"Auto-classifying 25 tickets took {elapsed.TotalMilliseconds} ms.");
+        AssertQualityGates(stepStats, averageMs: 1_500, maxMs: 3_000, p95Ms: 3_000);
     }
 
     [Fact]
-    public async Task FilteredList_100Tickets_CompletesUnderTwoSeconds()
+    public async Task FilteredList_100Tickets_MeetsNBomberQualityGates()
     {
         // Arrange
         using var client = _factory.CreateClient();
+        WarmUp(client);
         var csv = Csv(Enumerable.Range(1, 100).Select(index => CsvRow(
             index,
             category: index % 2 == 0 ? "billing_question" : "technical_issue",
@@ -121,13 +154,19 @@ public sealed class PerformanceTests : IDisposable
         importResponse.EnsureSuccessStatusCode();
 
         // Act
-        var (elapsed, response) = await Measure(() => client.GetAsync("/tickets?category=billing_question&priority=high"));
-        var tickets = await ReadJson(response);
+        var stepStats = RunSingleStepScenario(
+            "filtered_list_100",
+            "get_filtered_tickets",
+            async () =>
+            {
+                var response = await client.GetAsync("/tickets?category=billing_question&priority=high");
+                var tickets = await ReadJson(response);
+                return response.StatusCode == HttpStatusCode.OK
+                    && tickets.RootElement.GetArrayLength() == 25;
+            });
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(25, tickets.RootElement.GetArrayLength());
-        Assert.True(elapsed < TimeSpan.FromSeconds(2), $"Filtered list took {elapsed.TotalMilliseconds} ms.");
+        AssertQualityGates(stepStats, averageMs: 500, maxMs: 2_000, p95Ms: 2_000);
     }
 
     public void Dispose()
@@ -141,13 +180,40 @@ public sealed class PerformanceTests : IDisposable
         }
     }
 
-    private static async Task<(TimeSpan Elapsed, T Result)> Measure<T>(Func<Task<T>> action)
+    private static void WarmUp(HttpClient client)
     {
-        var stopwatch = Stopwatch.StartNew();
-        var result = await action();
-        stopwatch.Stop();
+        var response = client.GetAsync("/health").GetAwaiter().GetResult();
+        response.EnsureSuccessStatusCode();
+    }
 
-        return (stopwatch.Elapsed, result);
+    private static StepStats RunSingleStepScenario(string scenarioName, string stepName, Func<Task<bool>> request)
+    {
+        var scenario = Scenario.Create(scenarioName, async context =>
+            await Step.Run(stepName, context, async () =>
+            {
+                var isSuccess = await request();
+                return isSuccess ? Response.Ok() : Response.Fail();
+            }))
+            .WithoutWarmUp()
+            .WithLoadSimulations(Simulation.Inject(
+                rate: 1,
+                interval: TimeSpan.FromSeconds(1),
+                during: TimeSpan.FromSeconds(1)));
+
+        var result = NBomberRunner
+            .RegisterScenarios(scenario)
+            .Run();
+
+        return result.ScenarioStats.Get(scenarioName).StepStats.Get(stepName);
+    }
+
+    private static void AssertQualityGates(StepStats stats, double averageMs, double maxMs, double p95Ms)
+    {
+        Assert.True(stats.Ok.Request.Count > 0, "NBomber did not record successful requests.");
+        Assert.True(stats.Fail.Request.Percent <= AllowedFailurePercent, $"Failure rate was {stats.Fail.Request.Percent}%.");
+        Assert.True(stats.Ok.Latency.MeanMs <= averageMs, $"Average request execution time was {stats.Ok.Latency.MeanMs} ms; gate is {averageMs} ms.");
+        Assert.True(stats.Ok.Latency.MaxMs <= maxMs, $"Max request execution time was {stats.Ok.Latency.MaxMs} ms; gate is {maxMs} ms.");
+        Assert.True(stats.Ok.Latency.Percent95 <= p95Ms, $"P95 request execution time was {stats.Ok.Latency.Percent95} ms; gate is {p95Ms} ms.");
     }
 
     private static async Task<JsonDocument> CreateTicket(HttpClient client, CreateTicketApiRequest request)
