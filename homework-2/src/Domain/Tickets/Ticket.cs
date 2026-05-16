@@ -19,7 +19,8 @@ public sealed class Ticket
         DateTimeOffset? resolvedAt,
         string? assignedTo,
         IReadOnlyList<string> tags,
-        TicketMetadata metadata)
+        TicketMetadata metadata,
+        TicketClassification? classification)
     {
         Id = id;
         CustomerId = customerId;
@@ -36,6 +37,7 @@ public sealed class Ticket
         AssignedTo = assignedTo;
         Tags = tags;
         Metadata = metadata;
+        Classification = classification;
     }
 
     public Guid Id { get; }
@@ -68,6 +70,8 @@ public sealed class Ticket
 
     public TicketMetadata Metadata { get; }
 
+    public TicketClassification? Classification { get; }
+
     public static ValidationResult<Ticket> Create(TicketDraft draft, DateTimeOffset? timestamp = null)
     {
         ArgumentNullException.ThrowIfNull(draft);
@@ -94,7 +98,8 @@ public sealed class Ticket
             null,
             NormalizeOptional(draft.AssignedTo),
             draft.Tags?.Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).ToArray() ?? [],
-            draft.Metadata!);
+            draft.Metadata!,
+            NormalizeClassification(draft.Classification));
 
         return ValidationResult<Ticket>.Success(ticket);
     }
@@ -144,7 +149,8 @@ public sealed class Ticket
             resolvedAt,
             NormalizeOptional(draft.AssignedTo),
             draft.Tags?.Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).ToArray() ?? [],
-            draft.Metadata!);
+            draft.Metadata!,
+            NormalizeClassification(draft.Classification));
 
         return ValidationResult<Ticket>.Success(ticket);
     }
@@ -184,6 +190,7 @@ public sealed class Ticket
         ValidateEnum(draft.Priority, nameof(TicketDraft.Priority), errors);
         ValidateEnum(draft.Status, nameof(TicketDraft.Status), errors);
         ValidateMetadata(draft.Metadata, errors);
+        ValidateClassification(draft.Classification, errors);
 
         return errors;
     }
@@ -260,8 +267,54 @@ public sealed class Ticket
         }
     }
 
+    private static void ValidateClassification(TicketClassification? classification, ICollection<ValidationError> errors)
+    {
+        if (classification is null)
+        {
+            return;
+        }
+
+        if (!Enum.IsDefined(classification.Category))
+        {
+            errors.Add(new ValidationError("Classification.Category", "Classification category must be a defined value."));
+        }
+
+        if (!Enum.IsDefined(classification.Priority))
+        {
+            errors.Add(new ValidationError("Classification.Priority", "Classification priority must be a defined value."));
+        }
+
+        if (classification.Confidence is < 0 or > 1)
+        {
+            errors.Add(new ValidationError("Classification.Confidence", "Classification confidence must be between 0 and 1."));
+        }
+
+        if (string.IsNullOrWhiteSpace(classification.Reasoning))
+        {
+            errors.Add(new ValidationError("Classification.Reasoning", "Classification reasoning is required."));
+        }
+    }
+
     private static string? NormalizeOptional(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static TicketClassification? NormalizeClassification(TicketClassification? classification)
+    {
+        if (classification is null)
+        {
+            return null;
+        }
+
+        return classification with
+        {
+            Reasoning = classification.Reasoning.Trim(),
+            KeywordsFound = classification.KeywordsFound
+                .Where(keyword => !string.IsNullOrWhiteSpace(keyword))
+                .Select(keyword => keyword.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray()
+        };
     }
 }

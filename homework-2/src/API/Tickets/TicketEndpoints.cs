@@ -2,6 +2,7 @@ using Application.Common;
 using Application.Tickets;
 using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API.Tickets;
 
@@ -16,6 +17,8 @@ internal static class TicketEndpoints
             .WithName("ImportTickets");
         group.MapPost("/", Create)
             .WithName("CreateTicket");
+        group.MapPost("/{id:guid}/auto-classify", AutoClassify)
+            .WithName("AutoClassifyTicket");
         group.MapGet("/", List)
             .WithName("ListTickets");
         group.MapGet("/{id:guid}", GetById)
@@ -53,6 +56,7 @@ internal static class TicketEndpoints
 
     private static async Task<Results<Created<TicketResponse>, ValidationProblem>> Create(
         CreateTicketRequest request,
+        [FromQuery(Name = "auto_classify")] bool? autoClassify,
         ISender sender,
         CancellationToken cancellationToken)
     {
@@ -61,7 +65,7 @@ internal static class TicketEndpoints
             return TypedResults.ValidationProblem(errors);
         }
 
-        var result = await sender.Send(request.ToCommand(), cancellationToken);
+        var result = await sender.Send(request.ToCommand(autoClassify == true), cancellationToken);
         if (result.Status == ApplicationResultStatus.ValidationError)
         {
             return ApiValidation.FromErrors(result.Errors);
@@ -69,6 +73,21 @@ internal static class TicketEndpoints
 
         var response = result.Value!.ToResponse();
         return TypedResults.Created($"/tickets/{response.Id}", response);
+    }
+
+    private static async Task<Results<Ok<ClassificationResponse>, NotFound, ValidationProblem>> AutoClassify(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new AutoClassifyTicketCommand(id), cancellationToken);
+
+        return result.Status switch
+        {
+            ApplicationResultStatus.Success => TypedResults.Ok(result.Value!.ToResponse()),
+            ApplicationResultStatus.NotFound => TypedResults.NotFound(),
+            _ => ApiValidation.FromErrors(result.Errors)
+        };
     }
 
     private static async Task<Results<Ok<IReadOnlyList<TicketResponse>>, ValidationProblem>> List(

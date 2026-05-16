@@ -70,6 +70,14 @@ public sealed class DeleteTicketCommandValidator : AbstractValidator<DeleteTicke
     }
 }
 
+public sealed class AutoClassifyTicketCommandValidator : AbstractValidator<AutoClassifyTicketCommand>
+{
+    public AutoClassifyTicketCommandValidator()
+    {
+        RuleFor(command => command.Id).NotEmpty();
+    }
+}
+
 internal static class EnumValidationExtensions
 {
     public static IRuleBuilderOptions<T, TEnum?> MustBeDefinedEnum<T, TEnum>(this IRuleBuilder<T, TEnum?> ruleBuilder)

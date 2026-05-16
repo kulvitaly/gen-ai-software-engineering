@@ -193,16 +193,16 @@ While implementing phases, fill placeholders in:
 
 **Layers:** Domain/Application (classifier), Infrastructure (persist confidence), API
 
-- [ ] **RED** — `CategorizationTests.cs` (**10 tests**):
-  - [ ] Keyword → **category** rules: login/password/2FA → `account_access`; payment/invoice/refund → `billing_question`; etc. per [TASKS.md](../TASKS.md).
-  - [ ] Keyword → **priority**: urgent / high / medium (default) / low lists.
-  - [ ] **Confidence** in `[0, 1]`; **reasoning** string; **keywords_found** collection.
-  - [ ] Manual **override** on update clears or replaces auto fields per your spec (test the chosen behavior).
-  - [ ] **Logging**: decision logged (use `ILogger` fake or `TestLogger` — assert log was called with ticket id + outcome).
-- [ ] **GREEN**: Classifier service; store **classification confidence** on ticket; update repository and handlers.
-- [ ] **RED**: API tests for `POST /tickets/{id}/auto-classify` response shape; `404` when missing.
-- [ ] **GREEN**: Optional **`auto_classify`** flag on `POST /tickets` (query or body — pick one, document); auto-run classifier when true.
-- [ ] **Coverage**: **≥ 85%**.
+- [x] **RED** — `CategorizationTests.cs` (**10 tests**):
+  - [x] Keyword → **category** rules: login/password/2FA → `account_access`; payment/invoice/refund → `billing_question`; etc. per [TASKS.md](../TASKS.md).
+  - [x] Keyword → **priority**: urgent / high / medium (default) / low lists.
+  - [x] **Confidence** in `[0, 1]`; **reasoning** string; **keywords_found** collection.
+  - [x] Manual **override** on update clears or replaces auto fields per your spec (test the chosen behavior).
+  - [x] **Logging**: decision logged (use `ILogger` fake or `TestLogger` — assert log was called with ticket id + outcome).
+- [x] **GREEN**: Classifier service; store **classification confidence** on ticket; update repository and handlers.
+- [x] **RED**: API tests for `POST /tickets/{id}/auto-classify` response shape; `404` when missing.
+- [x] **GREEN**: Optional **`auto_classify`** flag on `POST /tickets` (query or body — pick one, document); auto-run classifier when true.
+- [x] **Coverage**: **≥ 85%**.
 
 ---
 

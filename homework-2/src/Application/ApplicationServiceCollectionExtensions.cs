@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Tickets;
 using Application.Tickets.Import;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<ITicketImportParser, CsvTicketImportParser>();
         services.AddSingleton<ITicketImportParser, JsonTicketImportParser>();
         services.AddSingleton<ITicketImportParser, XmlTicketImportParser>();
+        services.AddSingleton<ITicketClassifier, TicketClassifier>();
 
         return services;
     }

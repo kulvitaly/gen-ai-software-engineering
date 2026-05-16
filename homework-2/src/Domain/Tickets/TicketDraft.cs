@@ -11,4 +11,5 @@ public sealed record TicketDraft(
     TicketStatus? Status,
     IReadOnlyCollection<string>? Tags,
     TicketMetadata? Metadata,
-    string? AssignedTo = null);
+    string? AssignedTo = null,
+    TicketClassification? Classification = null);

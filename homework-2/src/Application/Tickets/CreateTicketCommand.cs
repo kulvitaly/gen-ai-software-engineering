@@ -15,4 +15,5 @@ public sealed record CreateTicketCommand(
     TicketStatus? Status,
     IReadOnlyCollection<string>? Tags,
     TicketMetadata? Metadata,
-    string? AssignedTo = null) : IRequest<ApplicationResult<TicketDto>>;
+    string? AssignedTo = null,
+    bool AutoClassify = false) : IRequest<ApplicationResult<TicketDto>>;

@@ -4,7 +4,7 @@ This document describes the public API surface for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The project is currently through **Phase 5** of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The API application starts successfully, exposes health checks, publishes OpenAPI/Scalar documentation, implements ticket CRUD endpoints, and supports CSV/JSON/XML ticket imports.
+The project is currently through **Phase 6** of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The API application starts successfully, exposes health checks, publishes OpenAPI/Scalar documentation, implements ticket CRUD endpoints, supports CSV/JSON/XML ticket imports, and can auto-classify tickets.
 
 Base development URLs:
 
@@ -41,7 +41,7 @@ curl http://localhost:5077/health
 
 Create a new support ticket.
 
-Request validation uses DataAnnotations on the API request DTO. JSON uses `snake_case` names.
+Request validation uses DataAnnotations on the API request DTO. JSON uses `snake_case` names. Pass `auto_classify=true` as a query string to classify the ticket before it is saved; category and priority from the classifier replace the request values and classification metadata is stored.
 
 **Request**
 
@@ -61,7 +61,8 @@ Request validation uses DataAnnotations on the API request DTO. JSON uses `snake
     "browser": "Edge",
     "device_type": "desktop"
   },
-  "assigned_to": null
+  "assigned_to": null,
+  "classification": null
 }
 ```
 
@@ -76,6 +77,12 @@ Request validation uses DataAnnotations on the API request DTO. JSON uses `snake
 curl -X POST http://localhost:5077/tickets \
   -H "Content-Type: application/json" \
   -d "{\"customer_id\":\"customer-1\",\"customer_email\":\"ada@example.com\",\"customer_name\":\"Ada Lovelace\",\"subject\":\"Cannot access account\",\"description\":\"I cannot access my customer account after resetting my password.\",\"category\":\"account_access\",\"priority\":\"high\",\"status\":\"new\",\"tags\":[\"account\",\"login\"],\"metadata\":{\"source\":\"web_form\",\"browser\":\"Edge\",\"device_type\":\"desktop\"}}"
+```
+
+```bash
+curl -X POST "http://localhost:5077/tickets?auto_classify=true" \
+  -H "Content-Type: application/json" \
+  -d "{\"customer_id\":\"customer-1\",\"customer_email\":\"ada@example.com\",\"customer_name\":\"Ada Lovelace\",\"subject\":\"Billing refund blocking launch\",\"description\":\"The payment refund is important and blocking our launch.\",\"category\":\"other\",\"priority\":\"medium\",\"status\":\"new\",\"tags\":[\"billing\"],\"metadata\":{\"source\":\"web_form\",\"browser\":\"Edge\",\"device_type\":\"desktop\"}}"
 ```
 
 ### POST /tickets/import
@@ -143,7 +150,8 @@ List tickets with optional filters:
       "source": "web_form",
       "browser": "Edge",
       "device_type": "desktop"
-    }
+    },
+    "classification": null
   }
 ]
 ```
@@ -164,6 +172,8 @@ Retrieve a ticket by UUID.
 ### PUT /tickets/{id}
 
 Partially update a ticket. All request fields are optional; provided values are validated with DataAnnotations and then applied by the application handler.
+
+Manual category or priority updates clear stored auto-classification metadata so the response reflects the manual override.
 
 **Request**
 
@@ -204,7 +214,14 @@ Delete a ticket.
 
 Run automatic category and priority classification for an existing ticket.
 
-Expected response includes:
+The classifier scans subject and description keywords, updates the ticket category and priority, stores classification metadata, and logs the decision.
+
+**Responses**
+
+- `200 OK` with the classification decision.
+- `404 Not Found` when the ticket does not exist.
+
+**Response**
 
 ```json
 {
@@ -214,6 +231,12 @@ Expected response includes:
   "reasoning": "Matched technical and high-priority keywords.",
   "keywords_found": ["error", "blocking"]
 }
+```
+
+**cURL**
+
+```bash
+curl -X POST http://localhost:5077/tickets/{id}/auto-classify
 ```
 
 ## Ticket Model
@@ -242,6 +265,13 @@ The ticket model follows [TASKS.md](../TASKS.md):
     "source": "web_form | email | api | chat | phone",
     "browser": "string",
     "device_type": "desktop | mobile | tablet"
+  },
+  "classification": {
+    "category": "account_access | technical_issue | billing_question | feature_request | bug_report | other",
+    "priority": "urgent | high | medium | low",
+    "confidence": "number 0-1",
+    "reasoning": "string",
+    "keywords_found": ["array"]
   }
 }
 ```

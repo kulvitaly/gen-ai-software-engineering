@@ -2,13 +2,16 @@ using Application.Common;
 using Domain.Tickets;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Tickets;
 
 public sealed class CreateTicketCommandHandler(
     ITicketRepository repository,
     IValidator<CreateTicketCommand> validator,
-    IClock clock) : IRequestHandler<CreateTicketCommand, ApplicationResult<TicketDto>>
+    IClock clock,
+    ITicketClassifier? classifier = null,
+    ILogger<CreateTicketCommandHandler>? logger = null) : IRequestHandler<CreateTicketCommand, ApplicationResult<TicketDto>>
 {
     public async Task<ApplicationResult<TicketDto>> Handle(CreateTicketCommand request, CancellationToken cancellationToken)
     {
@@ -24,9 +27,27 @@ public sealed class CreateTicketCommandHandler(
             return ApplicationResult<TicketDto>.ValidationFailure(ErrorMapper.FromDomainErrors(result.Errors));
         }
 
-        await repository.Add(result.Value!, cancellationToken);
+        var ticket = result.Value!;
+        if (request.AutoClassify)
+        {
+            if (classifier is null)
+            {
+                return ApplicationResult<TicketDto>.ValidationFailure([new ApplicationError(nameof(request.AutoClassify), "Ticket classifier is not configured.")]);
+            }
 
-        return ApplicationResult<TicketDto>.Success(TicketMapper.ToDto(result.Value!));
+            var classification = classifier.Classify(ticket);
+            ticket = Reclassify(ticket, classification, clock.UtcNow);
+            logger?.LogInformation(
+                "Auto-classified ticket {TicketId} as {Category}/{Priority} with confidence {Confidence}.",
+                ticket.Id,
+                classification.Category,
+                classification.Priority,
+                classification.Confidence);
+        }
+
+        await repository.Add(ticket, cancellationToken);
+
+        return ApplicationResult<TicketDto>.Success(TicketMapper.ToDto(ticket));
     }
 
     private static TicketDraft ToDraft(CreateTicketCommand command)
@@ -43,6 +64,30 @@ public sealed class CreateTicketCommandHandler(
             command.Tags,
             command.Metadata,
             command.AssignedTo);
+    }
+
+    private static Ticket Reclassify(Ticket ticket, TicketClassification classification, DateTimeOffset timestamp)
+    {
+        var result = Ticket.Rehydrate(
+            ticket.Id,
+            new TicketDraft(
+                ticket.CustomerId,
+                ticket.CustomerEmail,
+                ticket.CustomerName,
+                ticket.Subject,
+                ticket.Description,
+                classification.Category,
+                classification.Priority,
+                ticket.Status,
+                ticket.Tags,
+                ticket.Metadata,
+                ticket.AssignedTo,
+                classification),
+            ticket.CreatedAt,
+            timestamp,
+            ticket.ResolvedAt);
+
+        return result.Value!;
     }
 }
 
@@ -141,7 +186,8 @@ public sealed class UpdateTicketCommandHandler(
             status,
             command.Tags ?? existing.Tags,
             command.Metadata ?? existing.Metadata,
-            command.AssignedTo ?? existing.AssignedTo);
+            command.AssignedTo ?? existing.AssignedTo,
+            command.Category.HasValue || command.Priority.HasValue ? null : existing.Classification);
     }
 
     private static DateTimeOffset? ResolveTimestamp(Ticket existing, TicketStatus? requestedStatus, DateTimeOffset now)
@@ -174,5 +220,68 @@ public sealed class DeleteTicketCommandHandler(
         return deleted
             ? ApplicationResult<DeleteTicketResponse>.Success(new DeleteTicketResponse(request.Id))
             : ApplicationResult<DeleteTicketResponse>.NotFound(nameof(request.Id), "Ticket was not found.");
+    }
+}
+
+public sealed class AutoClassifyTicketCommandHandler(
+    ITicketRepository repository,
+    IValidator<AutoClassifyTicketCommand> validator,
+    ITicketClassifier classifier,
+    IClock clock,
+    ILogger<AutoClassifyTicketCommandHandler> logger) : IRequestHandler<AutoClassifyTicketCommand, ApplicationResult<ClassificationDto>>
+{
+    public async Task<ApplicationResult<ClassificationDto>> Handle(AutoClassifyTicketCommand request, CancellationToken cancellationToken)
+    {
+        var validation = await validator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ApplicationResult<ClassificationDto>.ValidationFailure(ErrorMapper.FromValidationFailures(validation.Errors));
+        }
+
+        var existing = await repository.GetById(request.Id, cancellationToken);
+        if (existing is null)
+        {
+            return ApplicationResult<ClassificationDto>.NotFound(nameof(request.Id), "Ticket was not found.");
+        }
+
+        var classification = classifier.Classify(existing);
+        var result = Ticket.Rehydrate(
+            existing.Id,
+            new TicketDraft(
+                existing.CustomerId,
+                existing.CustomerEmail,
+                existing.CustomerName,
+                existing.Subject,
+                existing.Description,
+                classification.Category,
+                classification.Priority,
+                existing.Status,
+                existing.Tags,
+                existing.Metadata,
+                existing.AssignedTo,
+                classification),
+            existing.CreatedAt,
+            clock.UtcNow,
+            existing.ResolvedAt);
+
+        if (!result.IsValid)
+        {
+            return ApplicationResult<ClassificationDto>.ValidationFailure(ErrorMapper.FromDomainErrors(result.Errors));
+        }
+
+        var updated = await repository.Update(result.Value!, cancellationToken);
+        if (!updated)
+        {
+            return ApplicationResult<ClassificationDto>.NotFound(nameof(request.Id), "Ticket was not found.");
+        }
+
+        logger.LogInformation(
+            "Auto-classified ticket {TicketId} as {Category}/{Priority} with confidence {Confidence}.",
+            existing.Id,
+            classification.Category,
+            classification.Priority,
+            classification.Confidence);
+
+        return ApplicationResult<ClassificationDto>.Success(TicketMapper.ToDto(classification));
     }
 }

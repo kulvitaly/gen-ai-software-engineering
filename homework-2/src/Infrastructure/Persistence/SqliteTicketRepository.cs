@@ -3,6 +3,7 @@ using System.Text.Json;
 using Application.Tickets;
 using Dapper;
 using Domain.Tickets;
+using Microsoft.Data.Sqlite;
 
 namespace Infrastructure.Persistence;
 
@@ -30,7 +31,10 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
                 resolved_at TEXT NULL,
                 assigned_to TEXT NULL,
                 tags_json TEXT NOT NULL,
-                metadata_json TEXT NOT NULL
+                metadata_json TEXT NOT NULL,
+                classification_confidence REAL NULL,
+                classification_reasoning TEXT NULL,
+                classification_keywords_json TEXT NOT NULL DEFAULT '[]'
             );
 
             CREATE INDEX IF NOT EXISTS ix_tickets_category ON tickets(category);
@@ -38,6 +42,8 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
             CREATE INDEX IF NOT EXISTS ix_tickets_status ON tickets(status);
             """,
             cancellationToken: cancellationToken));
+
+        await EnsureClassificationColumns(connection, cancellationToken);
     }
 
     public async Task Add(Ticket ticket, CancellationToken cancellationToken = default)
@@ -62,7 +68,10 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
                 resolved_at,
                 assigned_to,
                 tags_json,
-                metadata_json
+                metadata_json,
+                classification_confidence,
+                classification_reasoning,
+                classification_keywords_json
             )
             VALUES (
                 @Id,
@@ -79,7 +88,10 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
                 @ResolvedAt,
                 @AssignedTo,
                 @TagsJson,
-                @MetadataJson
+                @MetadataJson,
+                @ClassificationConfidence,
+                @ClassificationReasoning,
+                @ClassificationKeywordsJson
             );
             """,
             ToParameters(ticket),
@@ -106,7 +118,10 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
                 resolved_at AS ResolvedAt,
                 assigned_to AS AssignedTo,
                 tags_json AS TagsJson,
-                metadata_json AS MetadataJson
+                metadata_json AS MetadataJson,
+                classification_confidence AS ClassificationConfidence,
+                classification_reasoning AS ClassificationReasoning,
+                classification_keywords_json AS ClassificationKeywordsJson
             FROM tickets
             WHERE id = @Id;
             """,
@@ -138,7 +153,10 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
                 resolved_at AS ResolvedAt,
                 assigned_to AS AssignedTo,
                 tags_json AS TagsJson,
-                metadata_json AS MetadataJson
+                metadata_json AS MetadataJson,
+                classification_confidence AS ClassificationConfidence,
+                classification_reasoning AS ClassificationReasoning,
+                classification_keywords_json AS ClassificationKeywordsJson
             FROM tickets
             WHERE (@Category IS NULL OR category = @Category)
               AND (@Priority IS NULL OR priority = @Priority)
@@ -178,7 +196,10 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
                 resolved_at = @ResolvedAt,
                 assigned_to = @AssignedTo,
                 tags_json = @TagsJson,
-                metadata_json = @MetadataJson
+                metadata_json = @MetadataJson,
+                classification_confidence = @ClassificationConfidence,
+                classification_reasoning = @ClassificationReasoning,
+                classification_keywords_json = @ClassificationKeywordsJson
             WHERE id = @Id;
             """,
             ToParameters(ticket),
@@ -221,8 +242,39 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
                     ticket.Metadata.Source!.Value.ToString(),
                     ticket.Metadata.Browser,
                     ticket.Metadata.DeviceType!.Value.ToString()),
-                JsonOptions)
+                JsonOptions),
+            ClassificationConfidence = ticket.Classification?.Confidence,
+            ClassificationReasoning = ticket.Classification?.Reasoning,
+            ClassificationKeywordsJson = JsonSerializer.Serialize(ticket.Classification?.KeywordsFound ?? [], JsonOptions)
         };
+    }
+
+    private static async Task EnsureClassificationColumns(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        var columns = (await connection.QueryAsync<string>(new CommandDefinition(
+            "SELECT name FROM pragma_table_info('tickets');",
+            cancellationToken: cancellationToken))).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (!columns.Contains("classification_confidence"))
+        {
+            await connection.ExecuteAsync(new CommandDefinition(
+                "ALTER TABLE tickets ADD COLUMN classification_confidence REAL NULL;",
+                cancellationToken: cancellationToken));
+        }
+
+        if (!columns.Contains("classification_reasoning"))
+        {
+            await connection.ExecuteAsync(new CommandDefinition(
+                "ALTER TABLE tickets ADD COLUMN classification_reasoning TEXT NULL;",
+                cancellationToken: cancellationToken));
+        }
+
+        if (!columns.Contains("classification_keywords_json"))
+        {
+            await connection.ExecuteAsync(new CommandDefinition(
+                "ALTER TABLE tickets ADD COLUMN classification_keywords_json TEXT NOT NULL DEFAULT '[]';",
+                cancellationToken: cancellationToken));
+        }
     }
 
     private static Ticket ToTicket(TicketRow row)
@@ -238,7 +290,8 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
             ParseEnum<TicketStatus>(row.Status),
             DeserializeTags(row.TagsJson),
             DeserializeMetadata(row.MetadataJson),
-            row.AssignedTo);
+            row.AssignedTo,
+            ToClassification(row));
 
         var result = Ticket.Rehydrate(
             Guid.Parse(row.Id),
@@ -270,6 +323,21 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
             ParseEnum<TicketSource>(metadata.Source),
             metadata.Browser,
             ParseEnum<DeviceType>(metadata.DeviceType));
+    }
+
+    private static TicketClassification? ToClassification(TicketRow row)
+    {
+        if (!row.ClassificationConfidence.HasValue || string.IsNullOrWhiteSpace(row.ClassificationReasoning))
+        {
+            return null;
+        }
+
+        return new TicketClassification(
+            ParseEnum<TicketCategory>(row.Category),
+            ParseEnum<TicketPriority>(row.Priority),
+            row.ClassificationConfidence.Value,
+            row.ClassificationReasoning,
+            DeserializeTags(row.ClassificationKeywordsJson).ToArray());
     }
 
     private static TEnum ParseEnum<TEnum>(string value)
@@ -323,5 +391,11 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
         public required string TagsJson { get; init; }
 
         public required string MetadataJson { get; init; }
+
+        public double? ClassificationConfidence { get; init; }
+
+        public string? ClassificationReasoning { get; init; }
+
+        public required string ClassificationKeywordsJson { get; init; }
     }
 }

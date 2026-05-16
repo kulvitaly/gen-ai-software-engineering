@@ -55,6 +55,34 @@ public sealed class TicketApiTests : IDisposable
     }
 
     [Fact]
+    public async Task PostTickets_WithAutoClassifyFlag_ReturnsClassifiedTicket()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var request = ValidCreateRequest() with
+        {
+            Subject = "Billing refund blocking launch",
+            Description = "The payment refund is important and blocking our launch.",
+            Category = "other",
+            Priority = "medium"
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/tickets?auto_classify=true", request, JsonOptions);
+        var ticket = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("billing_question", ticket.RootElement.GetProperty("category").GetString());
+        Assert.Equal("high", ticket.RootElement.GetProperty("priority").GetString());
+        var classification = ticket.RootElement.GetProperty("classification");
+        Assert.Equal("billing_question", classification.GetProperty("category").GetString());
+        Assert.Equal("high", classification.GetProperty("priority").GetString());
+        Assert.InRange(classification.GetProperty("confidence").GetDouble(), 0, 1);
+        Assert.True(classification.GetProperty("keywords_found").GetArrayLength() > 0);
+    }
+
+    [Fact]
     public async Task PostTickets_WithInvalidBody_ReturnsValidationProblem()
     {
         // Arrange
@@ -137,6 +165,49 @@ public sealed class TicketApiTests : IDisposable
 
         // Act
         var response = await client.GetAsync($"/tickets/{unknownId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostAutoClassify_WhenFound_ReturnsClassificationResponse()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest() with
+        {
+            Subject = "Cannot access login",
+            Description = "This is critical because I cannot access my password reset flow.",
+            Category = "other",
+            Priority = "medium"
+        });
+        var id = created.RootElement.GetProperty("id").GetString();
+
+        // Act
+        var response = await client.PostAsync($"/tickets/{id}/auto-classify", content: null);
+        var classification = await ReadJson(response);
+        var getResponse = await client.GetAsync($"/tickets/{id}");
+        var ticket = await ReadJson(getResponse);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("account_access", classification.RootElement.GetProperty("category").GetString());
+        Assert.Equal("urgent", classification.RootElement.GetProperty("priority").GetString());
+        Assert.InRange(classification.RootElement.GetProperty("confidence").GetDouble(), 0, 1);
+        Assert.True(classification.RootElement.GetProperty("keywords_found").GetArrayLength() > 0);
+        Assert.Equal("account_access", ticket.RootElement.GetProperty("classification").GetProperty("category").GetString());
+    }
+
+    [Fact]
+    public async Task PostAutoClassify_WhenMissing_ReturnsNotFound()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.PostAsync($"/tickets/{unknownId}/auto-classify", content: null);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

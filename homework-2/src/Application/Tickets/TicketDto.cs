@@ -17,4 +17,12 @@ public sealed record TicketDto(
     DateTimeOffset? ResolvedAt,
     string? AssignedTo,
     IReadOnlyList<string> Tags,
-    TicketMetadata Metadata);
+    TicketMetadata Metadata,
+    TicketClassification? Classification);
+
+public sealed record ClassificationDto(
+    TicketCategory Category,
+    TicketPriority Priority,
+    double Confidence,
+    string Reasoning,
+    IReadOnlyList<string> KeywordsFound);

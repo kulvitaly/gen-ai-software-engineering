@@ -41,6 +41,9 @@ public sealed class TicketRepositoryTests : IDisposable
         Assert.Contains("assigned_to", columns);
         Assert.Contains("tags_json", columns);
         Assert.Contains("metadata_json", columns);
+        Assert.Contains("classification_confidence", columns);
+        Assert.Contains("classification_reasoning", columns);
+        Assert.Contains("classification_keywords_json", columns);
     }
 
     [Fact]
@@ -71,6 +74,12 @@ public sealed class TicketRepositoryTests : IDisposable
         Assert.Equal(ticket.AssignedTo, stored.AssignedTo);
         Assert.Equal(ticket.Tags, stored.Tags);
         Assert.Equal(ticket.Metadata, stored.Metadata);
+        Assert.NotNull(stored.Classification);
+        Assert.Equal(ticket.Classification!.Category, stored.Classification.Category);
+        Assert.Equal(ticket.Classification.Priority, stored.Classification.Priority);
+        Assert.Equal(ticket.Classification.Confidence, stored.Classification.Confidence);
+        Assert.Equal(ticket.Classification.Reasoning, stored.Classification.Reasoning);
+        Assert.Equal(ticket.Classification.KeywordsFound, stored.Classification.KeywordsFound);
     }
 
     [Fact]
@@ -191,7 +200,13 @@ public sealed class TicketRepositoryTests : IDisposable
                 Status: TicketStatus.New,
                 Tags: ["billing", "invoice"],
                 Metadata: new TicketMetadata(TicketSource.Email, "Firefox", DeviceType.Desktop),
-                AssignedTo: "agent-7"),
+                AssignedTo: "agent-7",
+                Classification: new TicketClassification(
+                    category,
+                    priority,
+                    0.82,
+                    "Matched billing keywords.",
+                    ["billing", "invoice"])),
             new DateTimeOffset(2026, 5, 16, 10, 30, 0, TimeSpan.Zero));
 
         return result.Value!;

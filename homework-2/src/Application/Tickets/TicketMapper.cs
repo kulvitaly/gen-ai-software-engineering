@@ -21,6 +21,17 @@ internal static class TicketMapper
             ticket.ResolvedAt,
             ticket.AssignedTo,
             ticket.Tags,
-            ticket.Metadata);
+            ticket.Metadata,
+            ticket.Classification);
+    }
+
+    public static ClassificationDto ToDto(TicketClassification classification)
+    {
+        return new ClassificationDto(
+            classification.Category,
+            classification.Priority,
+            classification.Confidence,
+            classification.Reasoning,
+            classification.KeywordsFound);
     }
 }

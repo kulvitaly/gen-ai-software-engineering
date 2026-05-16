@@ -50,9 +50,17 @@ internal sealed record TicketResponse(
     DateTimeOffset? ResolvedAt,
     string? AssignedTo,
     IReadOnlyList<string> Tags,
-    TicketMetadataResponse Metadata);
+    TicketMetadataResponse Metadata,
+    ClassificationResponse? Classification);
 
 internal sealed record TicketMetadataResponse(string Source, string? Browser, string DeviceType);
+
+internal sealed record ClassificationResponse(
+    string Category,
+    string Priority,
+    double Confidence,
+    string Reasoning,
+    IReadOnlyList<string> KeywordsFound);
 
 internal sealed record DeleteTicketApiResponse(Guid Id);
 
@@ -62,7 +70,7 @@ internal sealed record ImportTicketFailureResponse(int RecordNumber, IReadOnlyLi
 
 internal static class TicketContracts
 {
-    public static CreateTicketCommand ToCommand(this CreateTicketRequest request)
+    public static CreateTicketCommand ToCommand(this CreateTicketRequest request, bool autoClassify)
     {
         return new CreateTicketCommand(
             request.CustomerId,
@@ -75,7 +83,8 @@ internal static class TicketContracts
             request.Status.ToStatus(),
             request.Tags,
             request.Metadata?.ToDomain(),
-            request.AssignedTo);
+            request.AssignedTo,
+            autoClassify);
     }
 
     public static UpdateTicketCommand ToCommand(this UpdateTicketRequest request, Guid id)
@@ -114,7 +123,28 @@ internal static class TicketContracts
             new TicketMetadataResponse(
                 ticket.Metadata.Source!.Value.ToApiValue(),
                 ticket.Metadata.Browser,
-                ticket.Metadata.DeviceType!.Value.ToApiValue()));
+                ticket.Metadata.DeviceType!.Value.ToApiValue()),
+            ticket.Classification?.ToResponse());
+    }
+
+    public static ClassificationResponse ToResponse(this ClassificationDto classification)
+    {
+        return new ClassificationResponse(
+            classification.Category.ToApiValue(),
+            classification.Priority.ToApiValue(),
+            classification.Confidence,
+            classification.Reasoning,
+            classification.KeywordsFound);
+    }
+
+    private static ClassificationResponse ToResponse(this TicketClassification classification)
+    {
+        return new ClassificationResponse(
+            classification.Category.ToApiValue(),
+            classification.Priority.ToApiValue(),
+            classification.Confidence,
+            classification.Reasoning,
+            classification.KeywordsFound);
     }
 
     public static ImportTicketsApiResponse ToResponse(this ImportTicketsResponse response)
