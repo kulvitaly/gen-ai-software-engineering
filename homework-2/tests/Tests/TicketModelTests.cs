@@ -7,10 +7,13 @@ public sealed class TicketModelTests
     [Fact]
     public void Create_WithValidDraft_ReturnsTicketWithGeneratedIdAndTimestamps()
     {
+        // Arrange
         var now = new DateTimeOffset(2026, 5, 16, 12, 0, 0, TimeSpan.Zero);
 
+        // Act
         var result = Ticket.Create(ValidDraft(), now);
 
+        // Assert
         Assert.True(result.IsValid);
         Assert.NotNull(result.Value);
         Assert.NotEqual(Guid.Empty, result.Value.Id);
@@ -31,6 +34,7 @@ public sealed class TicketModelTests
     [InlineData(nameof(TicketDraft.Description))]
     public void Create_WhenRequiredStringIsMissing_ReturnsValidationError(string field)
     {
+        // Arrange
         var draft = ValidDraft() with
         {
             CustomerId = field == nameof(TicketDraft.CustomerId) ? " " : "customer-1",
@@ -40,8 +44,10 @@ public sealed class TicketModelTests
             Description = field == nameof(TicketDraft.Description) ? null : "I cannot access my customer account."
         };
 
+        // Act
         var result = Ticket.Create(draft);
 
+        // Assert
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.Field == field);
     }
@@ -49,8 +55,13 @@ public sealed class TicketModelTests
     [Fact]
     public void Create_WhenEmailIsInvalid_ReturnsValidationError()
     {
-        var result = Ticket.Create(ValidDraft() with { CustomerEmail = "not-an-email" });
+        // Arrange
+        var draft = ValidDraft() with { CustomerEmail = "not-an-email" };
 
+        // Act
+        var result = Ticket.Create(draft);
+
+        // Assert
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.Field == nameof(TicketDraft.CustomerEmail));
     }
@@ -60,8 +71,13 @@ public sealed class TicketModelTests
     [InlineData("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")]
     public void Create_WhenSubjectLengthIsInvalid_ReturnsValidationError(string subject)
     {
-        var result = Ticket.Create(ValidDraft() with { Subject = subject });
+        // Arrange
+        var draft = ValidDraft() with { Subject = subject };
 
+        // Act
+        var result = Ticket.Create(draft);
+
+        // Assert
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.Field == nameof(TicketDraft.Subject));
     }
@@ -71,9 +87,14 @@ public sealed class TicketModelTests
     [InlineData("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")]
     public void Create_WhenDescriptionLengthIsInvalid_ReturnsValidationError(string description)
     {
+        // Arrange
         var invalidDescription = description == "too short" ? description : new string('x', 2001);
-        var result = Ticket.Create(ValidDraft() with { Description = invalidDescription });
+        var draft = ValidDraft() with { Description = invalidDescription };
 
+        // Act
+        var result = Ticket.Create(draft);
+
+        // Assert
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.Field == nameof(TicketDraft.Description));
     }
@@ -81,18 +102,42 @@ public sealed class TicketModelTests
     [Fact]
     public void Enums_ContainRequiredTaskValues()
     {
+        // Arrange
+        var expectedCategories = new[]
+        {
+            TicketCategory.AccountAccess,
+            TicketCategory.TechnicalIssue,
+            TicketCategory.BillingQuestion,
+            TicketCategory.FeatureRequest,
+            TicketCategory.BugReport,
+            TicketCategory.Other
+        };
+        var expectedPriorities = new[] { TicketPriority.Urgent, TicketPriority.High, TicketPriority.Medium, TicketPriority.Low };
+        var expectedStatuses = new[] { TicketStatus.New, TicketStatus.InProgress, TicketStatus.WaitingCustomer, TicketStatus.Resolved, TicketStatus.Closed };
+
+        // Act
+        var categories = Enum.GetValues<TicketCategory>();
+        var priorities = Enum.GetValues<TicketPriority>();
+        var statuses = Enum.GetValues<TicketStatus>();
+
+        // Assert
         Assert.Equal(
-            [TicketCategory.AccountAccess, TicketCategory.TechnicalIssue, TicketCategory.BillingQuestion, TicketCategory.FeatureRequest, TicketCategory.BugReport, TicketCategory.Other],
-            Enum.GetValues<TicketCategory>());
-        Assert.Equal([TicketPriority.Urgent, TicketPriority.High, TicketPriority.Medium, TicketPriority.Low], Enum.GetValues<TicketPriority>());
-        Assert.Equal([TicketStatus.New, TicketStatus.InProgress, TicketStatus.WaitingCustomer, TicketStatus.Resolved, TicketStatus.Closed], Enum.GetValues<TicketStatus>());
+            expectedCategories,
+            categories);
+        Assert.Equal(expectedPriorities, priorities);
+        Assert.Equal(expectedStatuses, statuses);
     }
 
     [Fact]
     public void Create_WhenEnumValueIsUndefined_ReturnsValidationError()
     {
-        var result = Ticket.Create(ValidDraft() with { Category = (TicketCategory)999 });
+        // Arrange
+        var draft = ValidDraft() with { Category = (TicketCategory)999 };
 
+        // Act
+        var result = Ticket.Create(draft);
+
+        // Assert
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.Field == nameof(TicketDraft.Category));
     }
@@ -100,8 +145,13 @@ public sealed class TicketModelTests
     [Fact]
     public void Create_WhenMetadataIsInvalid_ReturnsValidationErrors()
     {
-        var result = Ticket.Create(ValidDraft() with { Metadata = new TicketMetadata((TicketSource)999, "Edge", null) });
+        // Arrange
+        var draft = ValidDraft() with { Metadata = new TicketMetadata((TicketSource)999, "Edge", null) };
 
+        // Act
+        var result = Ticket.Create(draft);
+
+        // Assert
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, error => error.Field == "Metadata.Source");
         Assert.Contains(result.Errors, error => error.Field == "Metadata.DeviceType");
@@ -110,12 +160,15 @@ public sealed class TicketModelTests
     [Fact]
     public void MarkResolved_UpdatesStatusResolvedAtAndUpdatedAt()
     {
+        // Arrange
         var created = new DateTimeOffset(2026, 5, 16, 12, 0, 0, TimeSpan.Zero);
         var resolved = created.AddHours(2);
         var ticket = Ticket.Create(ValidDraft(), created).Value!;
 
+        // Act
         ticket.ChangeStatus(TicketStatus.Resolved, resolved);
 
+        // Assert
         Assert.Equal(TicketStatus.Resolved, ticket.Status);
         Assert.Equal(resolved, ticket.ResolvedAt);
         Assert.Equal(resolved, ticket.UpdatedAt);

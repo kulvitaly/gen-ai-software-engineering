@@ -131,14 +131,14 @@ While implementing phases, fill placeholders in:
 
 **Layer:** [src/Infrastructure](../src/Infrastructure)
 
-- [ ] **RED**: Tests against **SQLite** (in-memory or temp file) for:
-  - [ ] Schema creation / bootstrap (table matches ticket fields + JSON columns for `tags`/`metadata` if stored as text).
-  - [ ] **Insert** → read round-trip (all fields).
-  - [ ] **Update** updates `updated_at`; optional `resolved_at`.
-  - [ ] **Delete** removes row.
-  - [ ] **Get by id** returns null for unknown id.
-- [ ] **GREEN**: Dapper repository implementing interfaces (define `ITicketRepository` in **Application** or **Domain** per ARCHITECTURE); connection management; parameterized SQL.
-- [ ] **Coverage**: **≥ 85%** cumulative **Domain + Infrastructure**.
+- [x] **RED**: Tests against **SQLite** (in-memory or temp file) for:
+  - [x] Schema creation / bootstrap (table matches ticket fields + JSON columns for `tags`/`metadata` if stored as text).
+  - [x] **Insert** → read round-trip (all fields).
+  - [x] **Update** updates `updated_at`; optional `resolved_at`.
+  - [x] **Delete** removes row.
+  - [x] **Get by id** returns null for unknown id.
+- [x] **GREEN**: Dapper repository implementing interfaces (define `ITicketRepository` in **Application** or **Domain** per ARCHITECTURE); connection management; parameterized SQL.
+- [x] **Coverage**: **≥ 85%** cumulative **Domain + Infrastructure**.
 
 ---
 

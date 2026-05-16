@@ -4,13 +4,14 @@ This document outlines the target architecture for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The repository is currently through **Phase 1**:
+The repository is currently through **Phase 2**:
 
 - The solution contains `Domain`, `Application`, `Infrastructure`, `API`, and `Tests`.
 - The API starts successfully and exposes `/health`, OpenAPI JSON, and Scalar UI.
-- Dependency injection extension points exist in `Application` and `Infrastructure`.
+- Dependency injection extension points exist in `Application` and `Infrastructure`, including SQLite repository registration.
 - Ticket domain entities, enums, metadata, and validation result types are implemented under `src/Domain/Tickets`.
-- Persistence, CQRS handlers, import, and classification are still planned.
+- `ITicketRepository` is defined in Application and implemented by a Dapper-backed SQLite repository in Infrastructure.
+- CQRS handlers, import, and classification are still planned.
 
 ## High-Level Architecture
 
@@ -52,32 +53,32 @@ Planned contents:
 
 The application layer coordinates use cases and owns request/response shapes for commands and queries.
 
-Current Phase 0 contents:
+Current contents:
 
 - `AddApplication()` service registration.
 - MediatR assembly scanning.
 - FluentValidation assembly scanning.
+- `ITicketRepository` contract for ticket persistence.
 
 Planned contents:
 
 - CQRS handlers for ticket create, update, delete, get, list, import, and auto-classify.
 - Validation behavior and structured application results.
-- Repository interfaces, unless the final implementation chooses to place them in `Domain`.
 
 ### Infrastructure Layer
 
 The infrastructure layer implements external concerns.
 
-Current Phase 0 contents:
+Current contents:
 
-- `AddInfrastructure()` service registration placeholder.
+- `AddInfrastructure()` service registration.
 - Dapper and SQLite packages are installed.
+- `SqliteConnectionFactory` for connection management.
+- `SqliteTicketRepository` with schema bootstrap, parameterized SQL, and JSON storage for tags and metadata.
 
 Planned contents:
 
-- SQLite schema initialization.
-- Dapper repository implementations.
-- Connection management and optional SQLite concurrency settings such as WAL mode.
+- Optional SQLite concurrency settings such as WAL mode.
 
 ### Presentation Layer
 
@@ -147,7 +148,7 @@ Commands and queries keep use cases explicit and provide a natural place for val
 
 ### Dapper and SQLite
 
-Dapper keeps persistence lightweight and explicit. SQLite is simple for local development and demo usage. For concurrent write-heavy scenarios, the implementation should consider WAL mode, short transactions, and retry behavior, then document final limits after integration tests are implemented.
+Dapper keeps persistence lightweight and explicit. SQLite is simple for local development and demo usage. The repository stores tags and metadata as JSON text and uses parameterized SQL for all writes and lookups. For concurrent write-heavy scenarios, the implementation should consider WAL mode, short transactions, and retry behavior, then document final limits after integration tests are implemented.
 
 ### OpenAPI and Scalar
 

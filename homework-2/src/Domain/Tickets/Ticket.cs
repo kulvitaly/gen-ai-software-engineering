@@ -99,6 +99,56 @@ public sealed class Ticket
         return ValidationResult<Ticket>.Success(ticket);
     }
 
+    public static ValidationResult<Ticket> Rehydrate(
+        Guid id,
+        TicketDraft draft,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt,
+        DateTimeOffset? resolvedAt)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        var errors = Validate(draft);
+        if (id == Guid.Empty)
+        {
+            errors.Add(new ValidationError(nameof(Id), "Ticket id is required."));
+        }
+
+        if (updatedAt < createdAt)
+        {
+            errors.Add(new ValidationError(nameof(UpdatedAt), "UpdatedAt cannot be earlier than CreatedAt."));
+        }
+
+        if (resolvedAt.HasValue && resolvedAt.Value < createdAt)
+        {
+            errors.Add(new ValidationError(nameof(ResolvedAt), "ResolvedAt cannot be earlier than CreatedAt."));
+        }
+
+        if (errors.Count > 0)
+        {
+            return ValidationResult<Ticket>.Failure(errors);
+        }
+
+        var ticket = new Ticket(
+            id,
+            draft.CustomerId!.Trim(),
+            draft.CustomerEmail!.Trim(),
+            draft.CustomerName!.Trim(),
+            draft.Subject!.Trim(),
+            draft.Description!.Trim(),
+            draft.Category!.Value,
+            draft.Priority!.Value,
+            draft.Status!.Value,
+            createdAt,
+            updatedAt,
+            resolvedAt,
+            NormalizeOptional(draft.AssignedTo),
+            draft.Tags?.Where(tag => !string.IsNullOrWhiteSpace(tag)).Select(tag => tag.Trim()).ToArray() ?? [],
+            draft.Metadata!);
+
+        return ValidationResult<Ticket>.Success(ticket);
+    }
+
     public void ChangeStatus(TicketStatus status, DateTimeOffset? timestamp = null)
     {
         if (!Enum.IsDefined(status))

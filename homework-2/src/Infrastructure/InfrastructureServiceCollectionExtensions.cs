@@ -1,3 +1,5 @@
+using Application.Tickets;
+using Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure;
@@ -9,8 +11,13 @@ public static class InfrastructureAssemblyMarker
 
 public static class InfrastructureServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        string connectionString = "Data Source=customer-support.db")
     {
+        services.AddSingleton<ISqliteConnectionFactory>(_ => new SqliteConnectionFactory(connectionString));
+        services.AddScoped<ITicketRepository, SqliteTicketRepository>();
+
         return services;
     }
 }
