@@ -4,12 +4,13 @@ This document provides guidance for testing the Intelligent Customer Support Sys
 
 ## Current Implementation Status
 
-The project is currently through **Phase 2**:
+The project is currently through **Phase 3**:
 
 - The automated suite contains smoke tests in `tests/Tests/Phase0SmokeTests.cs`.
 - The tests verify layer references and the `/health` endpoint.
 - `tests/Tests/TicketModelTests.cs` covers the domain ticket model and validation rules.
 - `tests/Tests/TicketRepositoryTests.cs` covers SQLite schema bootstrap and repository CRUD behavior.
+- `tests/Tests/TicketHandlerTests.cs` covers application commands and queries for create, get, list, update, and delete.
 - Coverage enforcement is configured in `tests/Tests/Tests.csproj` with an **85% total line coverage** threshold.
 - API ticket endpoints, import, classification, integration, and performance tests are planned in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
@@ -46,7 +47,7 @@ Current coverage behavior:
 - `coverlet.msbuild` fails the test command if total line coverage drops below **85%**.
 - Generated source files under `obj/**/*.cs` are excluded from coverage.
 - The Cobertura report is generated under the test project when coverage is collected.
-- Latest Phase 2 verification: **22 tests passed**, total line coverage **94.96%**, Domain line coverage **90.13%**, Infrastructure line coverage **99.15%**.
+- Latest Phase 3 verification: **33 tests passed**, total line coverage **93.51%**, Application line coverage **90.35%**, Domain line coverage **90.13%**, Infrastructure line coverage **99.26%**.
 
 ## Generate HTML Code Coverage Report
 

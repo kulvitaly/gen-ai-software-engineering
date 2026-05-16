@@ -4,14 +4,15 @@ This document outlines the target architecture for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The repository is currently through **Phase 2**:
+The repository is currently through **Phase 3**:
 
 - The solution contains `Domain`, `Application`, `Infrastructure`, `API`, and `Tests`.
 - The API starts successfully and exposes `/health`, OpenAPI JSON, and Scalar UI.
 - Dependency injection extension points exist in `Application` and `Infrastructure`, including SQLite repository registration.
 - Ticket domain entities, enums, metadata, and validation result types are implemented under `src/Domain/Tickets`.
 - `ITicketRepository` is defined in Application and implemented by a Dapper-backed SQLite repository in Infrastructure.
-- CQRS handlers, import, and classification are still planned.
+- CQRS handlers, FluentValidation validators, application result types, and ticket DTOs are implemented for create, get, list, update, and delete.
+- Import and classification are still planned.
 
 ## High-Level Architecture
 
@@ -59,11 +60,15 @@ Current contents:
 - MediatR assembly scanning.
 - FluentValidation assembly scanning.
 - `ITicketRepository` contract for ticket persistence.
+- Application result and error contracts for API-ready success, validation, and not-found outcomes.
+- Ticket commands and queries for create, get, list, update, and delete.
+- FluentValidation validators and MediatR handlers for ticket commands and queries.
+- `IClock` abstraction for deterministic timestamp handling in tests.
 
 Planned contents:
 
-- CQRS handlers for ticket create, update, delete, get, list, import, and auto-classify.
-- Validation behavior and structured application results.
+- CQRS handlers for ticket import and auto-classify.
+- Cross-cutting validation behavior if handler-level validation becomes repetitive.
 
 ### Infrastructure Layer
 
@@ -75,6 +80,7 @@ Current contents:
 - Dapper and SQLite packages are installed.
 - `SqliteConnectionFactory` for connection management.
 - `SqliteTicketRepository` with schema bootstrap, parameterized SQL, and JSON storage for tags and metadata.
+- Filtered ticket listing by `category`, `priority`, and `status`.
 
 Planned contents:
 

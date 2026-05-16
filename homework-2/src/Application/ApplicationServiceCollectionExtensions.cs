@@ -1,3 +1,4 @@
+using Application.Common;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddMediatR(configuration =>
             configuration.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly));
         services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
+        services.AddSingleton<IClock, SystemClock>();
 
         return services;
     }

@@ -127,6 +127,26 @@ public sealed class TicketRepositoryTests : IDisposable
         Assert.Null(ticket);
     }
 
+    [Fact]
+    public async Task List_WithCategoryAndPriorityFilter_ReturnsMatchingTickets()
+    {
+        // Arrange
+        await _repository.Initialize();
+        var matching = CreateTicket(TicketCategory.BillingQuestion, TicketPriority.High, "matching@example.com");
+        var wrongCategory = CreateTicket(TicketCategory.TechnicalIssue, TicketPriority.High, "wrong-category@example.com");
+        var wrongPriority = CreateTicket(TicketCategory.BillingQuestion, TicketPriority.Low, "wrong-priority@example.com");
+        await _repository.Add(matching);
+        await _repository.Add(wrongCategory);
+        await _repository.Add(wrongPriority);
+
+        // Act
+        var tickets = await _repository.List(new TicketFilter(TicketCategory.BillingQuestion, TicketPriority.High));
+
+        // Assert
+        var ticket = Assert.Single(tickets);
+        Assert.Equal(matching.Id, ticket.Id);
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
@@ -154,17 +174,20 @@ public sealed class TicketRepositoryTests : IDisposable
         return columns;
     }
 
-    private static Ticket CreateTicket()
+    private static Ticket CreateTicket(
+        TicketCategory category = TicketCategory.BillingQuestion,
+        TicketPriority priority = TicketPriority.Medium,
+        string customerEmail = "grace@example.com")
     {
         var result = Ticket.Create(
             new TicketDraft(
                 CustomerId: "customer-42",
-                CustomerEmail: "grace@example.com",
+                CustomerEmail: customerEmail,
                 CustomerName: "Grace Hopper",
                 Subject: "Billing invoice question",
                 Description: "I need help understanding the latest annual invoice.",
-                Category: TicketCategory.BillingQuestion,
-                Priority: TicketPriority.Medium,
+                Category: category,
+                Priority: priority,
                 Status: TicketStatus.New,
                 Tags: ["billing", "invoice"],
                 Metadata: new TicketMetadata(TicketSource.Email, "Firefox", DeviceType.Desktop),

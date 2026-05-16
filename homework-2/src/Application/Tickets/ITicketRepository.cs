@@ -10,6 +10,8 @@ public interface ITicketRepository
 
     Task<Ticket?> GetById(Guid id, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Ticket>> List(TicketFilter filter, CancellationToken cancellationToken = default);
+
     Task<bool> Update(Ticket ticket, CancellationToken cancellationToken = default);
 
     Task<bool> Delete(Guid id, CancellationToken cancellationToken = default);

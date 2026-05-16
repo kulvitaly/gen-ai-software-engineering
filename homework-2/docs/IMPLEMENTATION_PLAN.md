@@ -146,14 +146,14 @@ While implementing phases, fill placeholders in:
 
 **Layer:** [src/Application](../src/Application)
 
-- [ ] **RED**: Handler tests (in-memory fake repository **or** SQLite repository from Phase 2):
-  - [ ] **CreateTicket** — valid create; invalid → structured errors.
-  - [ ] **GetTicket** — found / not found.
-  - [ ] **ListTickets** — no filter; **combined filter** by `category` **and** `priority` ([TASKS.md](../TASKS.md) Task 5).
-  - [ ] **UpdateTicket** — partial update rules; manual override of category/priority after auto-classify (prepare for Phase 6).
-  - [ ] **DeleteTicket** — success / not found.
-- [ ] **GREEN**: MediatR `IRequest`/`IRequestHandler`, FluentValidation validators, mapping domain errors to application result types used by API.
-- [ ] **Coverage**: **≥ 85%** cumulative **Domain + Application + Infrastructure**.
+- [x] **RED**: Handler tests (in-memory fake repository **or** SQLite repository from Phase 2):
+  - [x] **CreateTicket** — valid create; invalid → structured errors.
+  - [x] **GetTicket** — found / not found.
+  - [x] **ListTickets** — no filter; **combined filter** by `category` **and** `priority` ([TASKS.md](../TASKS.md) Task 5).
+  - [x] **UpdateTicket** — partial update rules; manual override of category/priority after auto-classify (prepare for Phase 6).
+  - [x] **DeleteTicket** — success / not found.
+- [x] **GREEN**: MediatR `IRequest`/`IRequestHandler`, FluentValidation validators, mapping domain errors to application result types used by API.
+- [x] **Coverage**: **≥ 85%** cumulative **Domain + Application + Infrastructure**.
 
 ---
 

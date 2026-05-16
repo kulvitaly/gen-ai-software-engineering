@@ -116,6 +116,46 @@ public sealed class SqliteTicketRepository(ISqliteConnectionFactory connectionFa
         return row is null ? null : ToTicket(row);
     }
 
+    public async Task<IReadOnlyList<Ticket>> List(TicketFilter filter, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+
+        await using var connection = await connectionFactory.OpenConnection(cancellationToken);
+        var rows = await connection.QueryAsync<TicketRow>(new CommandDefinition(
+            """
+            SELECT
+                id,
+                customer_id AS CustomerId,
+                customer_email AS CustomerEmail,
+                customer_name AS CustomerName,
+                subject,
+                description,
+                category,
+                priority,
+                status,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt,
+                resolved_at AS ResolvedAt,
+                assigned_to AS AssignedTo,
+                tags_json AS TagsJson,
+                metadata_json AS MetadataJson
+            FROM tickets
+            WHERE (@Category IS NULL OR category = @Category)
+              AND (@Priority IS NULL OR priority = @Priority)
+              AND (@Status IS NULL OR status = @Status)
+            ORDER BY created_at ASC;
+            """,
+            new
+            {
+                Category = filter.Category?.ToString(),
+                Priority = filter.Priority?.ToString(),
+                Status = filter.Status?.ToString()
+            },
+            cancellationToken: cancellationToken));
+
+        return rows.Select(ToTicket).ToArray();
+    }
+
     public async Task<bool> Update(Ticket ticket, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(ticket);

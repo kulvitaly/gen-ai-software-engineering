@@ -1,0 +1,178 @@
+using Application.Common;
+using Domain.Tickets;
+using FluentValidation;
+using MediatR;
+
+namespace Application.Tickets;
+
+public sealed class CreateTicketCommandHandler(
+    ITicketRepository repository,
+    IValidator<CreateTicketCommand> validator,
+    IClock clock) : IRequestHandler<CreateTicketCommand, ApplicationResult<TicketDto>>
+{
+    public async Task<ApplicationResult<TicketDto>> Handle(CreateTicketCommand request, CancellationToken cancellationToken)
+    {
+        var validation = await validator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ApplicationResult<TicketDto>.ValidationFailure(ErrorMapper.FromValidationFailures(validation.Errors));
+        }
+
+        var result = Ticket.Create(ToDraft(request), clock.UtcNow);
+        if (!result.IsValid)
+        {
+            return ApplicationResult<TicketDto>.ValidationFailure(ErrorMapper.FromDomainErrors(result.Errors));
+        }
+
+        await repository.Add(result.Value!, cancellationToken);
+
+        return ApplicationResult<TicketDto>.Success(TicketMapper.ToDto(result.Value!));
+    }
+
+    private static TicketDraft ToDraft(CreateTicketCommand command)
+    {
+        return new TicketDraft(
+            command.CustomerId,
+            command.CustomerEmail,
+            command.CustomerName,
+            command.Subject,
+            command.Description,
+            command.Category,
+            command.Priority,
+            command.Status,
+            command.Tags,
+            command.Metadata,
+            command.AssignedTo);
+    }
+}
+
+public sealed class GetTicketQueryHandler(
+    ITicketRepository repository,
+    IValidator<GetTicketQuery> validator) : IRequestHandler<GetTicketQuery, ApplicationResult<TicketDto>>
+{
+    public async Task<ApplicationResult<TicketDto>> Handle(GetTicketQuery request, CancellationToken cancellationToken)
+    {
+        var validation = await validator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ApplicationResult<TicketDto>.ValidationFailure(ErrorMapper.FromValidationFailures(validation.Errors));
+        }
+
+        var ticket = await repository.GetById(request.Id, cancellationToken);
+
+        return ticket is null
+            ? ApplicationResult<TicketDto>.NotFound(nameof(request.Id), "Ticket was not found.")
+            : ApplicationResult<TicketDto>.Success(TicketMapper.ToDto(ticket));
+    }
+}
+
+public sealed class ListTicketsQueryHandler(
+    ITicketRepository repository,
+    IValidator<ListTicketsQuery> validator) : IRequestHandler<ListTicketsQuery, ApplicationResult<IReadOnlyList<TicketDto>>>
+{
+    public async Task<ApplicationResult<IReadOnlyList<TicketDto>>> Handle(ListTicketsQuery request, CancellationToken cancellationToken)
+    {
+        var validation = await validator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ApplicationResult<IReadOnlyList<TicketDto>>.ValidationFailure(ErrorMapper.FromValidationFailures(validation.Errors));
+        }
+
+        var tickets = await repository.List(new TicketFilter(request.Category, request.Priority, request.Status), cancellationToken);
+        var ticketDtos = tickets.Select(TicketMapper.ToDto).ToArray();
+
+        return ApplicationResult<IReadOnlyList<TicketDto>>.Success(ticketDtos);
+    }
+}
+
+public sealed class UpdateTicketCommandHandler(
+    ITicketRepository repository,
+    IValidator<UpdateTicketCommand> validator,
+    IClock clock) : IRequestHandler<UpdateTicketCommand, ApplicationResult<TicketDto>>
+{
+    public async Task<ApplicationResult<TicketDto>> Handle(UpdateTicketCommand request, CancellationToken cancellationToken)
+    {
+        var validation = await validator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ApplicationResult<TicketDto>.ValidationFailure(ErrorMapper.FromValidationFailures(validation.Errors));
+        }
+
+        var existing = await repository.GetById(request.Id, cancellationToken);
+        if (existing is null)
+        {
+            return ApplicationResult<TicketDto>.NotFound(nameof(request.Id), "Ticket was not found.");
+        }
+
+        var now = clock.UtcNow;
+        var updatedStatus = request.Status ?? existing.Status;
+        var resolvedAt = ResolveTimestamp(existing, request.Status, now);
+        var result = Ticket.Rehydrate(
+            existing.Id,
+            ToDraft(existing, request, updatedStatus),
+            existing.CreatedAt,
+            now,
+            resolvedAt);
+
+        if (!result.IsValid)
+        {
+            return ApplicationResult<TicketDto>.ValidationFailure(ErrorMapper.FromDomainErrors(result.Errors));
+        }
+
+        var updated = await repository.Update(result.Value!, cancellationToken);
+        if (!updated)
+        {
+            return ApplicationResult<TicketDto>.NotFound(nameof(request.Id), "Ticket was not found.");
+        }
+
+        return ApplicationResult<TicketDto>.Success(TicketMapper.ToDto(result.Value!));
+    }
+
+    private static TicketDraft ToDraft(Ticket existing, UpdateTicketCommand command, TicketStatus status)
+    {
+        return new TicketDraft(
+            existing.CustomerId,
+            command.CustomerEmail ?? existing.CustomerEmail,
+            command.CustomerName ?? existing.CustomerName,
+            command.Subject ?? existing.Subject,
+            command.Description ?? existing.Description,
+            command.Category ?? existing.Category,
+            command.Priority ?? existing.Priority,
+            status,
+            command.Tags ?? existing.Tags,
+            command.Metadata ?? existing.Metadata,
+            command.AssignedTo ?? existing.AssignedTo);
+    }
+
+    private static DateTimeOffset? ResolveTimestamp(Ticket existing, TicketStatus? requestedStatus, DateTimeOffset now)
+    {
+        if (!requestedStatus.HasValue)
+        {
+            return existing.ResolvedAt;
+        }
+
+        return requestedStatus.Value is TicketStatus.Resolved or TicketStatus.Closed
+            ? existing.ResolvedAt ?? now
+            : null;
+    }
+}
+
+public sealed class DeleteTicketCommandHandler(
+    ITicketRepository repository,
+    IValidator<DeleteTicketCommand> validator) : IRequestHandler<DeleteTicketCommand, ApplicationResult<DeleteTicketResponse>>
+{
+    public async Task<ApplicationResult<DeleteTicketResponse>> Handle(DeleteTicketCommand request, CancellationToken cancellationToken)
+    {
+        var validation = await validator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return ApplicationResult<DeleteTicketResponse>.ValidationFailure(ErrorMapper.FromValidationFailures(validation.Errors));
+        }
+
+        var deleted = await repository.Delete(request.Id, cancellationToken);
+
+        return deleted
+            ? ApplicationResult<DeleteTicketResponse>.Success(new DeleteTicketResponse(request.Id))
+            : ApplicationResult<DeleteTicketResponse>.NotFound(nameof(request.Id), "Ticket was not found.");
+    }
+}
