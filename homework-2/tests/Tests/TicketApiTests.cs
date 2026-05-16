@@ -1,0 +1,318 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Application.Tickets;
+using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Tests;
+
+public sealed class TicketApiTests : IDisposable
+{
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+    };
+
+    private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
+    private readonly WebApplicationFactory<Program> _factory;
+
+    public TicketApiTests()
+    {
+        _factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureServices(services =>
+                {
+                    services.AddSingleton<ISqliteConnectionFactory>(_ => new SqliteConnectionFactory($"Data Source={_databasePath}"));
+                    services.AddScoped<ITicketRepository, SqliteTicketRepository>();
+                });
+            });
+    }
+
+    [Fact]
+    public async Task PostTickets_WithValidBody_ReturnsCreatedTicket()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var request = ValidCreateRequest();
+
+        // Act
+        var response = await client.PostAsJsonAsync("/tickets", request, JsonOptions);
+        var ticket = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.True(ticket.RootElement.TryGetProperty("id", out var id));
+        Assert.True(Guid.TryParse(id.GetString(), out _));
+        Assert.Equal("ada@example.com", ticket.RootElement.GetProperty("customer_email").GetString());
+        Assert.Equal("account_access", ticket.RootElement.GetProperty("category").GetString());
+        Assert.True(ticket.RootElement.TryGetProperty("created_at", out _));
+        Assert.True(ticket.RootElement.TryGetProperty("updated_at", out _));
+    }
+
+    [Fact]
+    public async Task PostTickets_WithInvalidBody_ReturnsValidationProblem()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var request = ValidCreateRequest() with
+        {
+            CustomerEmail = "not-an-email",
+            Subject = ""
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/tickets", request, JsonOptions);
+        var problem = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("CustomerEmail", out _));
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("Subject", out _));
+    }
+
+    [Fact]
+    public async Task GetTickets_ReturnsCreatedTickets()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        await CreateTicket(client, ValidCreateRequest() with { CustomerEmail = "first@example.com" });
+        await CreateTicket(client, ValidCreateRequest() with { CustomerEmail = "second@example.com" });
+
+        // Act
+        var response = await client.GetAsync("/tickets");
+        var tickets = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, tickets.RootElement.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task GetTickets_WithCombinedFilters_ReturnsMatchingTickets()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var matching = await CreateTicket(client, ValidCreateRequest() with { Category = "billing_question", Priority = "high", Status = "new" });
+        await CreateTicket(client, ValidCreateRequest() with { CustomerEmail = "wrong-category@example.com", Category = "technical_issue", Priority = "high", Status = "new" });
+        await CreateTicket(client, ValidCreateRequest() with { CustomerEmail = "wrong-priority@example.com", Category = "billing_question", Priority = "low", Status = "new" });
+
+        // Act
+        var response = await client.GetAsync("/tickets?category=billing_question&priority=high&status=new");
+        var tickets = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var ticket = Assert.Single(tickets.RootElement.EnumerateArray());
+        Assert.Equal(matching.RootElement.GetProperty("id").GetString(), ticket.GetProperty("id").GetString());
+    }
+
+    [Fact]
+    public async Task GetTicketById_WhenFound_ReturnsTicket()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest());
+        var id = created.RootElement.GetProperty("id").GetString();
+
+        // Act
+        var response = await client.GetAsync($"/tickets/{id}");
+        var ticket = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(id, ticket.RootElement.GetProperty("id").GetString());
+    }
+
+    [Fact]
+    public async Task GetTicketById_WhenMissing_ReturnsNotFound()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.GetAsync($"/tickets/{unknownId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutTicket_WithValidBody_ReturnsUpdatedTicket()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest());
+        var id = created.RootElement.GetProperty("id").GetString();
+        var request = new UpdateTicketApiRequest(
+            CustomerEmail: null,
+            CustomerName: null,
+            Subject: "Updated subject",
+            Description: null,
+            Category: "feature_request",
+            Priority: "low",
+            Status: "resolved",
+            Tags: null,
+            Metadata: null,
+            AssignedTo: null);
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/tickets/{id}", request, JsonOptions);
+        var ticket = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Updated subject", ticket.RootElement.GetProperty("subject").GetString());
+        Assert.Equal("feature_request", ticket.RootElement.GetProperty("category").GetString());
+        Assert.Equal("low", ticket.RootElement.GetProperty("priority").GetString());
+        Assert.Equal("resolved", ticket.RootElement.GetProperty("status").GetString());
+        Assert.NotEqual(JsonValueKind.Null, ticket.RootElement.GetProperty("resolved_at").ValueKind);
+    }
+
+    [Fact]
+    public async Task PutTicket_WithInvalidBody_ReturnsValidationProblem()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest());
+        var id = created.RootElement.GetProperty("id").GetString();
+        var request = new UpdateTicketApiRequest(
+            CustomerEmail: "bad-email",
+            CustomerName: null,
+            Subject: "",
+            Description: null,
+            Category: null,
+            Priority: null,
+            Status: null,
+            Tags: null,
+            Metadata: null,
+            AssignedTo: null);
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/tickets/{id}", request, JsonOptions);
+        var problem = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("CustomerEmail", out _));
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("Subject", out _));
+    }
+
+    [Fact]
+    public async Task PutTicket_WhenMissing_ReturnsNotFound()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+        var request = new UpdateTicketApiRequest(null, null, "Updated subject", null, null, null, null, null, null, null);
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/tickets/{unknownId}", request, JsonOptions);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteTicket_WhenFound_RemovesTicket()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest());
+        var id = created.RootElement.GetProperty("id").GetString();
+
+        // Act
+        var deleteResponse = await client.DeleteAsync($"/tickets/{id}");
+        var getResponse = await client.GetAsync($"/tickets/{id}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteTicket_WhenMissing_ReturnsNotFound()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.DeleteAsync($"/tickets/{unknownId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    public void Dispose()
+    {
+        _factory.Dispose();
+        SqliteConnection.ClearAllPools();
+
+        if (File.Exists(_databasePath))
+        {
+            File.Delete(_databasePath);
+        }
+    }
+
+    private static async Task<JsonDocument> CreateTicket(HttpClient client, CreateTicketApiRequest request)
+    {
+        var response = await client.PostAsJsonAsync("/tickets", request, JsonOptions);
+        response.EnsureSuccessStatusCode();
+
+        return await ReadJson(response);
+    }
+
+    private static async Task<JsonDocument> ReadJson(HttpResponseMessage response)
+    {
+        var stream = await response.Content.ReadAsStreamAsync();
+        return await JsonDocument.ParseAsync(stream);
+    }
+
+    private static CreateTicketApiRequest ValidCreateRequest()
+    {
+        return new CreateTicketApiRequest(
+            CustomerId: "customer-1",
+            CustomerEmail: "ada@example.com",
+            CustomerName: "Ada Lovelace",
+            Subject: "Cannot access account",
+            Description: "I cannot access my customer account after resetting my password.",
+            Category: "account_access",
+            Priority: "high",
+            Status: "new",
+            Tags: ["account", "login"],
+            Metadata: new TicketMetadataApiRequest("web_form", "Edge", "desktop"),
+            AssignedTo: null);
+    }
+
+    private sealed record CreateTicketApiRequest(
+        string? CustomerId,
+        string? CustomerEmail,
+        string? CustomerName,
+        string? Subject,
+        string? Description,
+        string? Category,
+        string? Priority,
+        string? Status,
+        IReadOnlyCollection<string>? Tags,
+        TicketMetadataApiRequest? Metadata,
+        string? AssignedTo);
+
+    private sealed record UpdateTicketApiRequest(
+        string? CustomerEmail,
+        string? CustomerName,
+        string? Subject,
+        string? Description,
+        string? Category,
+        string? Priority,
+        string? Status,
+        IReadOnlyCollection<string>? Tags,
+        TicketMetadataApiRequest? Metadata,
+        string? AssignedTo);
+
+    private sealed record TicketMetadataApiRequest(string? Source, string? Browser, string? DeviceType);
+}

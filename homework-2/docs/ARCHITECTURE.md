@@ -4,7 +4,7 @@ This document outlines the target architecture for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The repository is currently through **Phase 3**:
+The repository is currently through **Phase 4**:
 
 - The solution contains `Domain`, `Application`, `Infrastructure`, `API`, and `Tests`.
 - The API starts successfully and exposes `/health`, OpenAPI JSON, and Scalar UI.
@@ -12,6 +12,7 @@ The repository is currently through **Phase 3**:
 - Ticket domain entities, enums, metadata, and validation result types are implemented under `src/Domain/Tickets`.
 - `ITicketRepository` is defined in Application and implemented by a Dapper-backed SQLite repository in Infrastructure.
 - CQRS handlers, FluentValidation validators, application result types, and ticket DTOs are implemented for create, get, list, update, and delete.
+- REST ticket CRUD endpoints are implemented with Minimal APIs, DataAnnotations request validation, snake_case JSON, and MediatR delegation.
 - Import and classification are still planned.
 
 ## High-Level Architecture
@@ -90,15 +91,20 @@ Planned contents:
 
 The API layer exposes HTTP endpoints and maps application results to status codes.
 
-Current Phase 0 contents:
+Current contents:
 
 - `/health`
 - `/openapi/v1.json`
 - `/scalar/v1`
+- `POST /tickets`
+- `GET /tickets`
+- `GET /tickets/{id}`
+- `PUT /tickets/{id}`
+- `DELETE /tickets/{id}`
+- DataAnnotations request models for HTTP input validation.
 
 Planned contents:
 
-- Ticket CRUD endpoints.
 - Multi-format import endpoint.
 - Auto-classification endpoint.
 - Consistent `ProblemDetails` or equivalent JSON error responses.
@@ -158,7 +164,11 @@ Dapper keeps persistence lightweight and explicit. SQLite is simple for local de
 
 ### OpenAPI and Scalar
 
-OpenAPI JSON and Scalar UI are exposed by default in Phase 0. This keeps the API discoverable as endpoints are added.
+OpenAPI JSON and Scalar UI are exposed by default. This keeps the API discoverable as endpoints are added.
+
+### API Validation
+
+The API layer validates request DTOs with DataAnnotations before sending commands to MediatR. Application handlers still run FluentValidation and domain validation, so HTTP validation catches malformed request payloads while application validation protects non-HTTP callers.
 
 ## Security Considerations
 

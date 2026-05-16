@@ -4,7 +4,7 @@ This document describes the public API surface for the Intelligent Customer Supp
 
 ## Current Implementation Status
 
-The project is currently through **Phase 1** of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The API application starts successfully, exposes health checks, and publishes OpenAPI/Scalar documentation. The ticket domain model exists in code, but ticket management HTTP endpoints are still planned and not implemented yet.
+The project is currently through **Phase 4** of [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The API application starts successfully, exposes health checks, publishes OpenAPI/Scalar documentation, and implements ticket CRUD endpoints.
 
 Base development URLs:
 
@@ -37,15 +37,46 @@ Checks whether the Web API process is running.
 curl http://localhost:5077/health
 ```
 
-## Planned Ticket Endpoints
-
-The endpoints below are required by [TASKS.md](../TASKS.md) and will be implemented in later phases. Until then, they should be treated as a contract target, not as available behavior.
-
 ### POST /tickets
 
 Create a new support ticket.
 
-Expected success status: `201 Created`
+Request validation uses DataAnnotations on the API request DTO. JSON uses `snake_case` names.
+
+**Request**
+
+```json
+{
+  "customer_id": "customer-1",
+  "customer_email": "ada@example.com",
+  "customer_name": "Ada Lovelace",
+  "subject": "Cannot access account",
+  "description": "I cannot access my customer account after resetting my password.",
+  "category": "account_access",
+  "priority": "high",
+  "status": "new",
+  "tags": ["account", "login"],
+  "metadata": {
+    "source": "web_form",
+    "browser": "Edge",
+    "device_type": "desktop"
+  },
+  "assigned_to": null
+}
+```
+
+**Responses**
+
+- `201 Created` with the created ticket.
+- `400 Bad Request` with validation details.
+
+**cURL**
+
+```bash
+curl -X POST http://localhost:5077/tickets \
+  -H "Content-Type: application/json" \
+  -d "{\"customer_id\":\"customer-1\",\"customer_email\":\"ada@example.com\",\"customer_name\":\"Ada Lovelace\",\"subject\":\"Cannot access account\",\"description\":\"I cannot access my customer account after resetting my password.\",\"category\":\"account_access\",\"priority\":\"high\",\"status\":\"new\",\"tags\":[\"account\",\"login\"],\"metadata\":{\"source\":\"web_form\",\"browser\":\"Edge\",\"device_type\":\"desktop\"}}"
+```
 
 ### POST /tickets/import
 
@@ -68,9 +99,39 @@ Expected response includes:
 
 ### GET /tickets
 
-List tickets with filtering. Planned filters include `category`, `priority`, and `status`.
+List tickets with optional filters:
 
-Example planned request:
+- `category`
+- `priority`
+- `status`
+
+**Response: `200 OK`**
+
+```json
+[
+  {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "customer_id": "customer-1",
+    "customer_email": "ada@example.com",
+    "customer_name": "Ada Lovelace",
+    "subject": "Cannot access account",
+    "description": "I cannot access my customer account after resetting my password.",
+    "category": "account_access",
+    "priority": "high",
+    "status": "new",
+    "created_at": "2026-05-16T12:00:00+00:00",
+    "updated_at": "2026-05-16T12:00:00+00:00",
+    "resolved_at": null,
+    "assigned_to": null,
+    "tags": ["account", "login"],
+    "metadata": {
+      "source": "web_form",
+      "browser": "Edge",
+      "device_type": "desktop"
+    }
+  }
+]
+```
 
 ```bash
 curl "http://localhost:5077/tickets?category=technical_issue&priority=high"
@@ -80,19 +141,49 @@ curl "http://localhost:5077/tickets?category=technical_issue&priority=high"
 
 Retrieve a ticket by UUID.
 
-Expected statuses: `200 OK`, `404 Not Found`
+**Responses**
+
+- `200 OK` with the ticket.
+- `404 Not Found` when the ticket does not exist.
 
 ### PUT /tickets/{id}
 
-Update a ticket.
+Partially update a ticket. All request fields are optional; provided values are validated with DataAnnotations and then applied by the application handler.
 
-Expected statuses: `200 OK`, `400 Bad Request`, `404 Not Found`
+**Request**
+
+```json
+{
+  "subject": "Updated subject",
+  "category": "feature_request",
+  "priority": "low",
+  "status": "resolved"
+}
+```
+
+**Responses**
+
+- `200 OK` with the updated ticket.
+- `400 Bad Request` with validation details.
+- `404 Not Found` when the ticket does not exist.
+
+**cURL**
+
+```bash
+curl -X PUT http://localhost:5077/tickets/{id} \
+  -H "Content-Type: application/json" \
+  -d "{\"subject\":\"Updated subject\",\"category\":\"feature_request\",\"priority\":\"low\",\"status\":\"resolved\"}"
+```
+
 
 ### DELETE /tickets/{id}
 
 Delete a ticket.
 
-Expected statuses: `200 OK` or `204 No Content`, `404 Not Found`
+**Responses**
+
+- `200 OK` with `{ "id": "..." }`.
+- `404 Not Found` when the ticket does not exist.
 
 ### POST /tickets/{id}/auto-classify
 
@@ -112,7 +203,7 @@ Expected response includes:
 
 ## Ticket Model
 
-The domain model is implemented under `src/Domain/Tickets`. The API DTOs will be mapped from this model in later phases.
+The domain model is implemented under `src/Domain/Tickets`. The API maps application DTOs to snake_case HTTP response models.
 
 The ticket model follows [TASKS.md](../TASKS.md):
 
@@ -142,7 +233,7 @@ The ticket model follows [TASKS.md](../TASKS.md):
 
 ## Error Response Format
 
-The final API should use a consistent JSON error response. Prefer ASP.NET Core `ProblemDetails` for validation and not-found errors. Domain validation currently returns structured validation errors with a `Field` and `Message`; the API layer should map those errors into this response shape:
+Validation errors use ASP.NET Core validation problem responses:
 
 ```json
 {
@@ -158,6 +249,6 @@ The final API should use a consistent JSON error response. Prefer ASP.NET Core `
 
 ## Notes for Future Updates
 
-- Replace this planned-contract content with exact request/response examples as each phase is implemented.
 - Keep the OpenAPI document and this file aligned.
 - Keep cURL examples runnable against `http://localhost:5077`.
+- Add import and auto-classification endpoint examples when those phases are implemented.

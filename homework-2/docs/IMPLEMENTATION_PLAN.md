@@ -161,15 +161,15 @@ While implementing phases, fill placeholders in:
 
 **Layer:** [src/API](../src/API) — map behaviors into [API_REFERENCE.md](API_REFERENCE.md).
 
-- [ ] **RED** — `TicketApiTests.cs` with `WebApplicationFactory`:
-  - [ ] `POST /tickets` — `201`, body contains `id`, timestamps; invalid body → `400`.
-  - [ ] `GET /tickets` — returns list; query filters (at least category, priority, status as required by product).
-  - [ ] `GET /tickets/{id}` — `200` / `404`.
-  - [ ] `PUT /tickets/{id}` — `200` / `400` / `404`.
-  - [ ] `DELETE /tickets/{id}` — success + `404`.
-  - [ ] **Content negotiation / error shape** consistent (ProblemDetails or your JSON error contract — document in API_REFERENCE).
-- [ ] **GREEN**: Minimal APIs or controllers; **only** delegate to MediatR; map results to HTTP status codes.
-- [ ] **Coverage**: **≥ 85%** including **API** (add narrow tests for `Program.cs` registration if needed).
+- [x] **RED** — `TicketApiTests.cs` with `WebApplicationFactory`:
+  - [x] `POST /tickets` — `201`, body contains `id`, timestamps; invalid body → `400`.
+  - [x] `GET /tickets` — returns list; query filters (at least category, priority, status as required by product).
+  - [x] `GET /tickets/{id}` — `200` / `404`.
+  - [x] `PUT /tickets/{id}` — `200` / `400` / `404`.
+  - [x] `DELETE /tickets/{id}` — success + `404`.
+  - [x] **Content negotiation / error shape** consistent (ProblemDetails or your JSON error contract — document in API_REFERENCE).
+- [x] **GREEN**: Minimal APIs or controllers; **only** delegate to MediatR; map results to HTTP status codes.
+- [x] **Coverage**: **≥ 85%** including **API** (add narrow tests for `Program.cs` registration if needed).
 
 ---
 
