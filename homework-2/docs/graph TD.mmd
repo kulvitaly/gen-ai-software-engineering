@@ -1,0 +1,7 @@
+graph TD
+    Client[API Client] --> API[Presentation API<br/>Minimal APIs + Scalar + OpenAPI]
+    API --> APP[Application<br/>CQRS + MediatR + FluentValidation]
+    APP --> DOM[Domain<br/>Ticket Aggregate + Validation Rules]
+    APP --> INF[Infrastructure<br/>Dapper Repository]
+    INF --> DB[(SQLite<br/>tickets table)]
+    INF --> DOM
