@@ -2,7 +2,8 @@
 
 > **Student Name**: Vitalii Kulykivskyi
 > **Date Submitted**: 2026-05-17
-> **AI Tools Used**: [List tools, e.g., Claude Code, GitHub Copilot]
+> **AI Tools Used**: [GitHub Copilot (Model: GPT 4o), Cursor IDE (GPT 5.5)]
+
 Homework 2 implementation of a customer support ticket management API using **.NET 10**, Clean Architecture, SQLite, Dapper, MediatR, FluentValidation, OpenAPI, Scalar, xUnit, coverlet, and NBomber.
 
 ## Features

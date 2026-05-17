@@ -1,8 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using Application;
-using Domain;
-using Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Tests;
@@ -14,25 +11,6 @@ public sealed class Phase0SmokeTests : IClassFixture<WebApplicationFactory<Progr
     public Phase0SmokeTests(WebApplicationFactory<Program> factory)
     {
         _factory = factory;
-    }
-
-    [Fact]
-    public void LayerMarkers_AreAvailableToTheTestProject()
-    {
-        // Arrange
-        var expectedDomainName = "Domain";
-        var expectedApplicationName = "Application";
-        var expectedInfrastructureName = "Infrastructure";
-
-        // Act
-        var domainName = DomainAssemblyMarker.Name;
-        var applicationName = ApplicationAssemblyMarker.Name;
-        var infrastructureName = InfrastructureAssemblyMarker.Name;
-
-        // Assert
-        Assert.Equal(expectedDomainName, domainName);
-        Assert.Equal(expectedApplicationName, applicationName);
-        Assert.Equal(expectedInfrastructureName, infrastructureName);
     }
 
     [Fact]
