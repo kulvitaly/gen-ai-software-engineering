@@ -191,18 +191,51 @@ While implementing phases, fill placeholders in:
 
 ## Phase 6 — Auto-classification (Task 2) + `POST /tickets/{id}/auto-classify`
 
-**Layers:** Domain/Application (classifier), Infrastructure (persist confidence), API
+- [x] **New Sub-phase: Manual Overwrite of Classification Results**
+  - [x] **RED**:
+    - Add tests to verify manual overwrites of classification results:
+      - Update `category`, `priority`, and `confidence_score` fields via `PUT /tickets/:id`.
+      - Ensure manual overwrites clear or replace auto-classified fields.
+      - Log manual overwrite actions with ticket ID and updated fields.
+  - [x] **GREEN**:
+    - Extend `PUT /tickets/:id` handler to accept and validate `category`, `priority`, and `confidence_score` fields.
+    - Update the repository to persist manual changes.
+    - Ensure overwrites are logged for traceability.
+  - [x] **Coverage**:
+    - Ensure **≥ 85%** coverage for manual overwrite logic.
 
-- [x] **RED** — `CategorizationTests.cs` (**10 tests**):
-  - [x] Keyword → **category** rules: login/password/2FA → `account_access`; payment/invoice/refund → `billing_question`; etc. per [TASKS.md](../TASKS.md).
-  - [x] Keyword → **priority**: urgent / high / medium (default) / low lists.
-  - [x] **Confidence** in `[0, 1]`; **reasoning** string; **keywords_found** collection.
-  - [x] Manual **override** on update clears or replaces auto fields per your spec (test the chosen behavior).
-  - [x] **Logging**: decision logged (use `ILogger` fake or `TestLogger` — assert log was called with ticket id + outcome).
-- [x] **GREEN**: Classifier service; store **classification confidence** on ticket; update repository and handlers.
-- [x] **RED**: API tests for `POST /tickets/{id}/auto-classify` response shape; `404` when missing.
-- [x] **GREEN**: Optional **`auto_classify`** flag on `POST /tickets` (query or body — pick one, document); auto-run classifier when true.
-- [x] **Coverage**: **≥ 85%**.
+- [x] **Follow-up: Align update classification contract with GET response shape**
+  - [x] **RED**:
+    - Add API tests proving `PUT /tickets/:id` accepts a `classification` object with the same JSON structure returned by `GET /tickets/:id`:
+      - `category`
+      - `priority`
+      - `confidence`
+      - `reasoning`
+      - `keywords_found`
+    - Add a regression test proving the old update contract does not rely on a standalone `confidence_score` field.
+    - Add API/application tests for `PUT /tickets/:id?auto_classify=true`, verifying the classifier can run during update and persist the same classification metadata shape returned by GET.
+  - [x] **GREEN**:
+    - Replace the flat `UpdateTicketRequest.ConfidenceScore` field with a nested `classification` request model that mirrors `ClassificationResponse`.
+    - Extend the `PUT /tickets/:id` endpoint to accept an `auto_classify` query flag, matching the `POST /tickets?auto_classify=true` behavior.
+    - Map manual `classification` updates through the application command so category, priority, confidence, reasoning, and keywords are persisted together.
+    - Define precedence explicitly: if `auto_classify=true` is supplied, classifier output wins over any manual `classification` object in the request.
+    - Keep manual category/priority-only updates clearing stored classification metadata unless a full `classification` object or `auto_classify=true` is provided.
+  - [x] **Docs**:
+    - Update [API_REFERENCE.md](API_REFERENCE.md) so the PUT request example uses the nested `classification` object and documents the `auto_classify` query flag.
+  - [x] **Coverage**:
+    - Re-run the coverage-gated suite and keep total line coverage **≥ 85%**.
+
+- [x] **Follow-up: Make manual PUT classification metadata optional**
+  - [x] **RED**:
+    - Add API/application tests proving `PUT /tickets/:id` accepts a manual `classification` object without `reasoning` and `keywords_found`.
+  - [x] **GREEN**:
+    - Keep `category`, `priority`, and `confidence` required for manual `classification` updates.
+    - Default missing `reasoning` to `"specified manually"`.
+    - Default missing `keywords_found` to an empty collection.
+  - [x] **Docs**:
+    - Update [API_REFERENCE.md](API_REFERENCE.md) to describe the optional PUT-only classification fields and defaults.
+  - [x] **Coverage**:
+    - Re-run the coverage-gated suite and keep total line coverage **≥ 85%**.
 
 ---
 

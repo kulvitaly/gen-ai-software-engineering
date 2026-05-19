@@ -133,6 +133,7 @@ internal static class TicketEndpoints
     private static async Task<Results<Ok<TicketResponse>, NotFound, ValidationProblem>> Update(
         Guid id,
         UpdateTicketRequest request,
+        [FromQuery(Name = "auto_classify")] bool? autoClassify,
         ISender sender,
         CancellationToken cancellationToken)
     {
@@ -141,7 +142,7 @@ internal static class TicketEndpoints
             return TypedResults.ValidationProblem(errors);
         }
 
-        var result = await sender.Send(request.ToCommand(id), cancellationToken);
+        var result = await sender.Send(request.ToCommand(id, autoClassify == true), cancellationToken);
 
         return result.Status switch
         {

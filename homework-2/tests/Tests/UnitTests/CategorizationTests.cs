@@ -145,6 +145,113 @@ public sealed class CategorizationTests
         Assert.Equal(TicketPriority.Low, result.Value.Priority);
     }
 
+    [Fact]
+    public async Task UpdateTicket_WithManualClassification_ReplacesClassificationAndLogsFields()
+    {
+        // Arrange
+        var repository = new InMemoryTicketRepository();
+        var logger = new TestLogger<UpdateTicketCommandHandler>();
+        var initial = CreateTicket(
+            subject: "Cannot access account",
+            description: "I cannot access login because password reset is blocking me.",
+            classification: new TicketClassification(
+                TicketCategory.AccountAccess,
+                TicketPriority.Urgent,
+                0.9,
+                "Matched access keywords.",
+                ["cannot access", "password"]));
+        await repository.Add(initial);
+        var handler = new UpdateTicketCommandHandler(repository, new UpdateTicketCommandValidator(), _clock, logger: logger);
+
+        // Act
+        var result = await handler.Handle(
+            new UpdateTicketCommand(
+                initial.Id,
+                Category: TicketCategory.FeatureRequest,
+                Priority: TicketPriority.Low,
+                Classification: new ManualClassification(
+                    TicketCategory.FeatureRequest,
+                    TicketPriority.Low,
+                    0.42,
+                    "Manual product request override.",
+                    ["roadmap", "feature"])),
+            CancellationToken.None);
+        var stored = await repository.GetById(initial.Id);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal(TicketCategory.FeatureRequest, result.Value.Category);
+        Assert.Equal(TicketPriority.Low, result.Value.Priority);
+        Assert.NotNull(result.Value.Classification);
+        Assert.Equal(0.42, result.Value.Classification.Confidence);
+        Assert.Equal(TicketCategory.FeatureRequest, result.Value.Classification.Category);
+        Assert.Equal(TicketPriority.Low, result.Value.Classification.Priority);
+        Assert.Equal("Manual product request override.", result.Value.Classification.Reasoning);
+        Assert.Equal(["roadmap", "feature"], result.Value.Classification.KeywordsFound);
+        Assert.Equal(result.Value.Classification, stored?.Classification);
+        Assert.Contains(logger.Messages, message => message.Contains(initial.Id.ToString(), StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(logger.Messages, message => message.Contains("category", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(logger.Messages, message => message.Contains("priority", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(logger.Messages, message => message.Contains("classification", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task UpdateTicket_WithManualClassificationWithoutOptionalMetadata_DefaultsValues()
+    {
+        // Arrange
+        var repository = new InMemoryTicketRepository();
+        var initial = CreateTicket();
+        await repository.Add(initial);
+        var handler = new UpdateTicketCommandHandler(repository, new UpdateTicketCommandValidator(), _clock);
+
+        // Act
+        var result = await handler.Handle(
+            new UpdateTicketCommand(
+                initial.Id,
+                Classification: new ManualClassification(
+                    TicketCategory.FeatureRequest,
+                    TicketPriority.Low,
+                    0.42,
+                    null,
+                    null)),
+            CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value?.Classification);
+        Assert.Equal("specified manually", result.Value.Classification.Reasoning);
+        Assert.Empty(result.Value.Classification.KeywordsFound);
+    }
+
+    [Fact]
+    public async Task UpdateTicket_WithInvalidManualClassification_ReturnsValidationError()
+    {
+        // Arrange
+        var repository = new InMemoryTicketRepository();
+        var initial = CreateTicket();
+        await repository.Add(initial);
+        var handler = new UpdateTicketCommandHandler(repository, new UpdateTicketCommandValidator(), _clock);
+
+        // Act
+        var result = await handler.Handle(
+            new UpdateTicketCommand(
+                initial.Id,
+                Classification: new ManualClassification(
+                    TicketCategory.FeatureRequest,
+                    TicketPriority.Low,
+                    1.5,
+                    "",
+                    [])),
+            CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ApplicationResultStatus.ValidationError, result.Status);
+        Assert.Contains(result.Errors, error => error.Field == "Classification.Confidence");
+        Assert.DoesNotContain(result.Errors, error => error.Field == "Classification.Reasoning");
+        Assert.DoesNotContain(result.Errors, error => error.Field == "Classification.KeywordsFound");
+    }
+
     private static Ticket CreateTicket(
         string subject = "Cannot access account",
         string description = "I cannot access my account after resetting my password.",

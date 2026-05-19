@@ -15,4 +15,13 @@ public sealed record UpdateTicketCommand(
     TicketStatus? Status = null,
     IReadOnlyCollection<string>? Tags = null,
     TicketMetadata? Metadata = null,
-    string? AssignedTo = null) : IRequest<ApplicationResult<TicketDto>>;
+    string? AssignedTo = null,
+    ManualClassification? Classification = null,
+    bool AutoClassify = false) : IRequest<ApplicationResult<TicketDto>>;
+
+public sealed record ManualClassification(
+    TicketCategory Category,
+    TicketPriority Priority,
+    double Confidence,
+    string? Reasoning,
+    IReadOnlyCollection<string>? KeywordsFound);

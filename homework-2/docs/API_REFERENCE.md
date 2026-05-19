@@ -173,7 +173,9 @@ Retrieve a ticket by UUID.
 
 Partially update a ticket. All request fields are optional; provided values are validated with DataAnnotations and then applied by the application handler.
 
-Manual category or priority updates clear stored auto-classification metadata so the response reflects the manual override.
+Manual category or priority updates clear stored auto-classification metadata so the response reflects the manual override. To manually replace the stored classification metadata, provide a nested `classification` object with the same shape returned by GET responses. For PUT requests, `reasoning` and `keywords_found` are optional: omitted or blank `reasoning` is saved as `"specified manually"`, and omitted `keywords_found` is saved as an empty collection.
+
+Pass `auto_classify=true` as a query string to classify the updated ticket before it is saved. When `auto_classify=true` is supplied, classifier output wins over any manual `classification` object in the request.
 
 **Request**
 
@@ -182,6 +184,11 @@ Manual category or priority updates clear stored auto-classification metadata so
   "subject": "Updated subject",
   "category": "feature_request",
   "priority": "low",
+  "classification": {
+    "category": "feature_request",
+    "priority": "low",
+    "confidence": 0.42
+  },
   "status": "resolved"
 }
 ```
@@ -197,7 +204,13 @@ Manual category or priority updates clear stored auto-classification metadata so
 ```bash
 curl -X PUT http://localhost:5077/tickets/{id} \
   -H "Content-Type: application/json" \
-  -d "{\"subject\":\"Updated subject\",\"category\":\"feature_request\",\"priority\":\"low\",\"status\":\"resolved\"}"
+  -d "{\"subject\":\"Updated subject\",\"category\":\"feature_request\",\"priority\":\"low\",\"classification\":{\"category\":\"feature_request\",\"priority\":\"low\",\"confidence\":0.42},\"status\":\"resolved\"}"
+```
+
+```bash
+curl -X PUT "http://localhost:5077/tickets/{id}?auto_classify=true" \
+  -H "Content-Type: application/json" \
+  -d "{\"subject\":\"Billing refund blocking launch\",\"description\":\"The payment refund is important and blocking our launch.\"}"
 ```
 
 

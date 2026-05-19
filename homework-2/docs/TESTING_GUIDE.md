@@ -47,12 +47,19 @@ Run with the enforced coverage gate:
 dotnet test CustomerSupportSystem.slnx /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Threshold=85 /p:ThresholdType=line /p:ThresholdStat=total
 ```
 
+Skip benchmark-style performance tests when you only need the functional suite:
+
+```bash
+dotnet test CustomerSupportSystem.slnx --filter "Category!=Performance"
+```
+
 Current coverage behavior:
 
 - `coverlet.msbuild` fails the test command if total line coverage drops below **85%**.
 - Generated source files under `obj/**/*.cs` are excluded from coverage.
 - The Cobertura report is generated under the test project when coverage is collected.
-- Latest Phase 7 verification: **89 tests passed**, total line coverage **93.24%**, API line coverage **94.44%**, Application line coverage **93.79%**, Domain line coverage **87.45%**, Infrastructure line coverage **95.00%**.
+- `PerformanceTests.cs` is marked with xUnit trait `Category=Performance`, so it can be excluded with `--filter "Category!=Performance"`.
+- Latest verification: **96 tests passed**, total line coverage **93.82%**, API line coverage **95.54%**, Application line coverage **94.41%**, Domain line coverage **87.45%**, Infrastructure line coverage **95.00%**.
 
 ## Generate HTML Code Coverage Report
 

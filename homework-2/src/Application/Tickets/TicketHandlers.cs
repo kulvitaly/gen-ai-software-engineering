@@ -133,7 +133,9 @@ public sealed class ListTicketsQueryHandler(
 public sealed class UpdateTicketCommandHandler(
     ITicketRepository repository,
     IValidator<UpdateTicketCommand> validator,
-    IClock clock) : IRequestHandler<UpdateTicketCommand, ApplicationResult<TicketDto>>
+    IClock clock,
+    ITicketClassifier? classifier = null,
+    ILogger<UpdateTicketCommandHandler>? logger = null) : IRequestHandler<UpdateTicketCommand, ApplicationResult<TicketDto>>
 {
     public async Task<ApplicationResult<TicketDto>> Handle(UpdateTicketCommand request, CancellationToken cancellationToken)
     {
@@ -164,30 +166,126 @@ public sealed class UpdateTicketCommandHandler(
             return ApplicationResult<TicketDto>.ValidationFailure(ErrorMapper.FromDomainErrors(result.Errors));
         }
 
-        var updated = await repository.Update(result.Value!, cancellationToken);
+        var ticket = result.Value!;
+        if (request.AutoClassify)
+        {
+            if (classifier is null)
+            {
+                return ApplicationResult<TicketDto>.ValidationFailure([new ApplicationError(nameof(request.AutoClassify), "Ticket classifier is not configured.")]);
+            }
+
+            var classification = classifier.Classify(ticket);
+            ticket = Reclassify(ticket, classification, now);
+            logger?.LogInformation(
+                "Auto-classified ticket {TicketId} as {Category}/{Priority} with confidence {Confidence}.",
+                ticket.Id,
+                classification.Category,
+                classification.Priority,
+                classification.Confidence);
+        }
+
+        var updated = await repository.Update(ticket, cancellationToken);
         if (!updated)
         {
             return ApplicationResult<TicketDto>.NotFound(nameof(request.Id), "Ticket was not found.");
         }
 
-        return ApplicationResult<TicketDto>.Success(TicketMapper.ToDto(result.Value!));
+        var manuallyOverwrittenFields = GetManuallyOverwrittenClassificationFields(request);
+        if (manuallyOverwrittenFields.Length > 0)
+        {
+            logger?.LogInformation(
+                "Manually overwrote classification fields for ticket {TicketId}: {UpdatedFields}.",
+                request.Id,
+                string.Join(", ", manuallyOverwrittenFields));
+        }
+
+        return ApplicationResult<TicketDto>.Success(TicketMapper.ToDto(ticket));
     }
 
     private static TicketDraft ToDraft(Ticket existing, UpdateTicketCommand command, TicketStatus status)
     {
+        var classification = ToClassification(existing, command);
+
         return new TicketDraft(
             existing.CustomerId,
             command.CustomerEmail ?? existing.CustomerEmail,
             command.CustomerName ?? existing.CustomerName,
             command.Subject ?? existing.Subject,
             command.Description ?? existing.Description,
-            command.Category ?? existing.Category,
-            command.Priority ?? existing.Priority,
+            command.Classification?.Category ?? command.Category ?? existing.Category,
+            command.Classification?.Priority ?? command.Priority ?? existing.Priority,
             status,
             command.Tags ?? existing.Tags,
             command.Metadata ?? existing.Metadata,
             command.AssignedTo ?? existing.AssignedTo,
-            command.Category.HasValue || command.Priority.HasValue ? null : existing.Classification);
+            classification);
+    }
+
+    private static TicketClassification? ToClassification(Ticket existing, UpdateTicketCommand command)
+    {
+        if (command.AutoClassify)
+        {
+            return null;
+        }
+
+        if (command.Classification is not null)
+        {
+            return new TicketClassification(
+                command.Classification.Category,
+                command.Classification.Priority,
+                command.Classification.Confidence,
+                string.IsNullOrWhiteSpace(command.Classification.Reasoning) ? "specified manually" : command.Classification.Reasoning,
+                command.Classification.KeywordsFound?.ToArray() ?? []);
+        }
+
+        return command.Category.HasValue || command.Priority.HasValue
+            ? null
+            : existing.Classification;
+    }
+
+    private static string[] GetManuallyOverwrittenClassificationFields(UpdateTicketCommand command)
+    {
+        var fields = new List<string>();
+        if (command.Category.HasValue)
+        {
+            fields.Add("category");
+        }
+
+        if (command.Priority.HasValue)
+        {
+            fields.Add("priority");
+        }
+
+        if (command.Classification is not null)
+        {
+            fields.Add("classification");
+        }
+
+        return fields.ToArray();
+    }
+
+    private static Ticket Reclassify(Ticket ticket, TicketClassification classification, DateTimeOffset timestamp)
+    {
+        var result = Ticket.Rehydrate(
+            ticket.Id,
+            new TicketDraft(
+                ticket.CustomerId,
+                ticket.CustomerEmail,
+                ticket.CustomerName,
+                ticket.Subject,
+                ticket.Description,
+                classification.Category,
+                classification.Priority,
+                ticket.Status,
+                ticket.Tags,
+                ticket.Metadata,
+                ticket.AssignedTo,
+                classification),
+            ticket.CreatedAt,
+            timestamp,
+            ticket.ResolvedAt);
+
+        return result.Value!;
     }
 
     private static DateTimeOffset? ResolveTimestamp(Ticket existing, TicketStatus? requestedStatus, DateTimeOffset now)

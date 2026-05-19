@@ -36,6 +36,12 @@ public sealed class UpdateTicketCommandValidator : AbstractValidator<UpdateTicke
         RuleFor(command => command.Category).MustBeDefinedEnum().When(command => command.Category.HasValue);
         RuleFor(command => command.Priority).MustBeDefinedEnum().When(command => command.Priority.HasValue);
         RuleFor(command => command.Status).MustBeDefinedEnum().When(command => command.Status.HasValue);
+        When(command => command.Classification is not null, () =>
+        {
+            RuleFor(command => command.Classification!.Category).IsInEnum();
+            RuleFor(command => command.Classification!.Priority).IsInEnum();
+            RuleFor(command => command.Classification!.Confidence).InclusiveBetween(0, 1);
+        });
         When(command => command.Metadata is not null, () =>
         {
             RuleFor(command => command.Metadata!.Source).MustBeDefinedEnum();

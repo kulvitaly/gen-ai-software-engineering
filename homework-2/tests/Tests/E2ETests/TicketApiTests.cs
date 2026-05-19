@@ -246,6 +246,169 @@ public sealed class TicketApiTests : IDisposable
     }
 
     [Fact]
+    public async Task PutTicket_WithManualClassification_ReplacesClassification()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest() with
+        {
+            Subject = "Billing refund blocking launch",
+            Description = "The payment refund is important and blocking our launch.",
+            Category = "other",
+            Priority = "medium"
+        });
+        var id = created.RootElement.GetProperty("id").GetString();
+        var classifyResponse = await client.PostAsync($"/tickets/{id}/auto-classify", content: null);
+        classifyResponse.EnsureSuccessStatusCode();
+        var request = new UpdateTicketApiRequest(
+            CustomerEmail: null,
+            CustomerName: null,
+            Subject: null,
+            Description: null,
+            Category: "feature_request",
+            Priority: "low",
+            Status: null,
+            Tags: null,
+            Metadata: null,
+            AssignedTo: null,
+            Classification: new ClassificationApiRequest(
+                Category: "feature_request",
+                Priority: "low",
+                Confidence: 0.42,
+                Reasoning: "Manual product request override.",
+                KeywordsFound: ["roadmap", "feature"]));
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/tickets/{id}", request, JsonOptions);
+        var ticket = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("feature_request", ticket.RootElement.GetProperty("category").GetString());
+        Assert.Equal("low", ticket.RootElement.GetProperty("priority").GetString());
+        var classification = ticket.RootElement.GetProperty("classification");
+        Assert.Equal("feature_request", classification.GetProperty("category").GetString());
+        Assert.Equal("low", classification.GetProperty("priority").GetString());
+        Assert.Equal(0.42, classification.GetProperty("confidence").GetDouble());
+        Assert.Equal("Manual product request override.", classification.GetProperty("reasoning").GetString());
+        Assert.Equal(2, classification.GetProperty("keywords_found").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task PutTicket_WithManualClassificationWithoutOptionalMetadata_DefaultsValues()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest());
+        var id = created.RootElement.GetProperty("id").GetString();
+        using var content = new StringContent(
+            """
+            {
+              "classification": {
+                "category": "feature_request",
+                "priority": "low",
+                "confidence": 0.42
+              }
+            }
+            """,
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await client.PutAsync($"/tickets/{id}", content);
+        var ticket = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var classification = ticket.RootElement.GetProperty("classification");
+        Assert.Equal("feature_request", classification.GetProperty("category").GetString());
+        Assert.Equal("low", classification.GetProperty("priority").GetString());
+        Assert.Equal(0.42, classification.GetProperty("confidence").GetDouble());
+        Assert.Equal("specified manually", classification.GetProperty("reasoning").GetString());
+        Assert.Equal(0, classification.GetProperty("keywords_found").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task PutTicket_WithAutoClassifyFlag_ReclassifiesUpdatedTicket()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest() with
+        {
+            Category = "other",
+            Priority = "medium"
+        });
+        var id = created.RootElement.GetProperty("id").GetString();
+        var request = new UpdateTicketApiRequest(
+            CustomerEmail: null,
+            CustomerName: null,
+            Subject: "Billing refund blocking launch",
+            Description: "The payment refund is important and blocking our launch.",
+            Category: "feature_request",
+            Priority: "low",
+            Status: null,
+            Tags: null,
+            Metadata: null,
+            AssignedTo: null,
+            Classification: new ClassificationApiRequest(
+                Category: "feature_request",
+                Priority: "low",
+                Confidence: 0.42,
+                Reasoning: "Manual product request override.",
+                KeywordsFound: ["roadmap"]));
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/tickets/{id}?auto_classify=true", request, JsonOptions);
+        var ticket = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("billing_question", ticket.RootElement.GetProperty("category").GetString());
+        Assert.Equal("high", ticket.RootElement.GetProperty("priority").GetString());
+        var classification = ticket.RootElement.GetProperty("classification");
+        Assert.Equal("billing_question", classification.GetProperty("category").GetString());
+        Assert.Equal("high", classification.GetProperty("priority").GetString());
+        Assert.InRange(classification.GetProperty("confidence").GetDouble(), 0, 1);
+        Assert.True(classification.GetProperty("keywords_found").GetArrayLength() > 0);
+    }
+
+    [Fact]
+    public async Task PutTicket_WithStandaloneConfidenceScore_DoesNotReplaceClassification()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var created = await CreateTicket(client, ValidCreateRequest() with
+        {
+            Subject = "Billing refund blocking launch",
+            Description = "The payment refund is important and blocking our launch.",
+            Category = "other",
+            Priority = "medium"
+        });
+        var id = created.RootElement.GetProperty("id").GetString();
+        var classifyResponse = await client.PostAsync($"/tickets/{id}/auto-classify", content: null);
+        classifyResponse.EnsureSuccessStatusCode();
+        using var content = new StringContent(
+            """
+            {
+              "confidence_score": 0.42
+            }
+            """,
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await client.PutAsync($"/tickets/{id}", content);
+        var ticket = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var classification = ticket.RootElement.GetProperty("classification");
+        Assert.Equal("billing_question", classification.GetProperty("category").GetString());
+        Assert.Equal("high", classification.GetProperty("priority").GetString());
+        Assert.NotEqual(0.42, classification.GetProperty("confidence").GetDouble());
+    }
+
+    [Fact]
     public async Task PutTicket_WithInvalidBody_ReturnsValidationProblem()
     {
         // Arrange
@@ -262,7 +425,13 @@ public sealed class TicketApiTests : IDisposable
             Status: null,
             Tags: null,
             Metadata: null,
-            AssignedTo: null);
+            AssignedTo: null,
+            Classification: new ClassificationApiRequest(
+                Category: "feature_request",
+                Priority: "low",
+                Confidence: 1.5,
+                Reasoning: "",
+                KeywordsFound: null));
 
         // Act
         var response = await client.PutAsJsonAsync($"/tickets/{id}", request, JsonOptions);
@@ -272,6 +441,9 @@ public sealed class TicketApiTests : IDisposable
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("CustomerEmail", out _));
         Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("Subject", out _));
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("Classification.Confidence", out _));
+        Assert.False(problem.RootElement.GetProperty("errors").TryGetProperty("Classification.Reasoning", out _));
+        Assert.False(problem.RootElement.GetProperty("errors").TryGetProperty("Classification.KeywordsFound", out _));
     }
 
     [Fact]
@@ -442,7 +614,15 @@ public sealed class TicketApiTests : IDisposable
         string? Status,
         IReadOnlyCollection<string>? Tags,
         TicketMetadataApiRequest? Metadata,
-        string? AssignedTo);
+        string? AssignedTo,
+        ClassificationApiRequest? Classification = null);
 
     private sealed record TicketMetadataApiRequest(string? Source, string? Browser, string? DeviceType);
+
+    private sealed record ClassificationApiRequest(
+        string? Category,
+        string? Priority,
+        double Confidence,
+        string? Reasoning,
+        IReadOnlyCollection<string>? KeywordsFound);
 }

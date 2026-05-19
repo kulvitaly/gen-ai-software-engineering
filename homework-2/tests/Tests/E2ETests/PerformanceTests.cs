@@ -13,6 +13,7 @@ using NBomber.CSharp;
 
 namespace Tests;
 
+[Trait("Category", "Performance")]
 public sealed class PerformanceTests : IDisposable
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)

@@ -28,7 +28,8 @@ internal sealed record UpdateTicketRequest(
     [property: TicketStatus(ErrorMessage = "Status must be a supported ticket status.")] string? Status,
     IReadOnlyCollection<string>? Tags,
     TicketMetadataRequest? Metadata,
-    string? AssignedTo);
+    string? AssignedTo,
+    ClassificationRequest? Classification);
 
 internal sealed record TicketMetadataRequest(
     [property: Required, TicketSource(ErrorMessage = "Source must be a supported ticket source.")] string? Source,
@@ -62,6 +63,13 @@ internal sealed record ClassificationResponse(
     string Reasoning,
     IReadOnlyList<string> KeywordsFound);
 
+internal sealed record ClassificationRequest(
+    [property: Required, TicketCategory(ErrorMessage = "Category must be a supported ticket category.")] string? Category,
+    [property: Required, TicketPriority(ErrorMessage = "Priority must be a supported ticket priority.")] string? Priority,
+    [property: Range(0, 1)] double Confidence,
+    string? Reasoning,
+    IReadOnlyCollection<string>? KeywordsFound);
+
 internal sealed record DeleteTicketApiResponse(Guid Id);
 
 internal sealed record ImportTicketsApiResponse(int Total, int Successful, IReadOnlyList<ImportTicketFailureResponse> Failed);
@@ -87,7 +95,7 @@ internal static class TicketContracts
             autoClassify);
     }
 
-    public static UpdateTicketCommand ToCommand(this UpdateTicketRequest request, Guid id)
+    public static UpdateTicketCommand ToCommand(this UpdateTicketRequest request, Guid id, bool autoClassify)
     {
         return new UpdateTicketCommand(
             id,
@@ -100,7 +108,9 @@ internal static class TicketContracts
             request.Status.ToStatus(),
             request.Tags,
             request.Metadata?.ToDomain(),
-            request.AssignedTo);
+            request.AssignedTo,
+            request.Classification?.ToManualClassification(),
+            autoClassify);
     }
 
     public static TicketResponse ToResponse(this TicketDto ticket)
@@ -187,5 +197,15 @@ internal static class TicketContracts
             metadata.Source.ToSource(),
             metadata.Browser,
             metadata.DeviceType.ToDeviceType());
+    }
+
+    private static ManualClassification ToManualClassification(this ClassificationRequest classification)
+    {
+        return new ManualClassification(
+            classification.Category.ToCategory()!.Value,
+            classification.Priority.ToPriority()!.Value,
+            classification.Confidence,
+            string.IsNullOrWhiteSpace(classification.Reasoning) ? "specified manually" : classification.Reasoning,
+            classification.KeywordsFound ?? []);
     }
 }
