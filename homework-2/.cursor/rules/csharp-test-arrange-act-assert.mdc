@@ -1,0 +1,11 @@
+---
+description: C# test readability convention
+globs: **/*Tests.cs
+alwaysApply: false
+---
+
+# C# Test Structure
+
+- Structure every test method with explicit `// Arrange`, `// Act`, and `// Assert` comments.
+- Keep setup data under `// Arrange`, the behavior under test under `// Act`, and verifications under `// Assert`.
+- Helper methods and test constructors do not need these comments unless they are themselves test methods.

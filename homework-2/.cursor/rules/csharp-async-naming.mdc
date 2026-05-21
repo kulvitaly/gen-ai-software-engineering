@@ -1,0 +1,11 @@
+---
+description: C# async method naming convention
+globs: **/*.cs
+alwaysApply: false
+---
+
+# C# Async Method Names
+
+- Do not add an `Async` suffix to async method names.
+- Prefer names that describe the operation, regardless of whether the implementation uses `async`/`await`.
+- When adding or renaming async methods, use names like `Initialize`, `GetById`, `Add`, `Update`, and `Delete` instead of `InitializeAsync`, `GetByIdAsync`, `AddAsync`, `UpdateAsync`, and `DeleteAsync`.

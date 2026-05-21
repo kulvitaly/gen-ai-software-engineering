@@ -32,6 +32,10 @@ yarn-error.log*
 
 # Test coverage
 coverage/
+coverage-report/
+**/coverage-report/
+coverage.cobertura.xml
+**/coverage.cobertura.xml
 .nyc_output/
 htmlcov/
 .coverage
@@ -98,3 +102,4 @@ Thumbs.db
 
 # SQLite file-backed dev DB (default config uses in-memory; ignore if switched locally)
 transactions.db
+homework-2/src/API/customer-support.db

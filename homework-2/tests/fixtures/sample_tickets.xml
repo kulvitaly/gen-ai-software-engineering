@@ -1,0 +1,579 @@
+﻿<tickets>
+  <ticket>
+    <customer_id>sample-customer-1</customer_id>
+    <customer_email>sample1@example.com</customer_email>
+    <customer_name>Sample Customer 1</customer_name>
+    <subject>Cannot access account</subject>
+    <description>I cannot access my account after resetting my password and need assistance.</description>
+    <category>account_access</category>
+    <priority>urgent</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>account_access</tag>
+    </tags>
+    <metadata>
+      <source>web_form</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-2</customer_id>
+    <customer_email>sample2@example.com</customer_email>
+    <customer_name>Sample Customer 2</customer_name>
+    <subject>Application crash on save</subject>
+    <description>The application shows an error and crashes when I save a ticket.</description>
+    <category>technical_issue</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>technical_issue</tag>
+    </tags>
+    <metadata>
+      <source>email</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-3</customer_id>
+    <customer_email>sample3@example.com</customer_email>
+    <customer_name>Sample Customer 3</customer_name>
+    <subject>Invoice refund question</subject>
+    <description>I need help understanding a payment invoice and refund status.</description>
+    <category>billing_question</category>
+    <priority>medium</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>billing_question</tag>
+    </tags>
+    <metadata>
+      <source>api</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-4</customer_id>
+    <customer_email>sample4@example.com</customer_email>
+    <customer_name>Sample Customer 4</customer_name>
+    <subject>Feature suggestion for dashboard</subject>
+    <description>Please consider this enhancement suggestion for the dashboard workflow.</description>
+    <category>feature_request</category>
+    <priority>low</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>feature_request</tag>
+    </tags>
+    <metadata>
+      <source>chat</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-5</customer_id>
+    <customer_email>sample5@example.com</customer_email>
+    <customer_name>Sample Customer 5</customer_name>
+    <subject>Bug reproduction steps</subject>
+    <description>Here are the steps to reproduce the defect in the customer portal.</description>
+    <category>bug_report</category>
+    <priority>urgent</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>bug_report</tag>
+    </tags>
+    <metadata>
+      <source>phone</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+    <assigned_to>agent-5</assigned_to>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-6</customer_id>
+    <customer_email>sample6@example.com</customer_email>
+    <customer_name>Sample Customer 6</customer_name>
+    <subject>General support question</subject>
+    <description>I have a general support question about my customer profile.</description>
+    <category>other</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>other</tag>
+    </tags>
+    <metadata>
+      <source>web_form</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-7</customer_id>
+    <customer_email>sample7@example.com</customer_email>
+    <customer_name>Sample Customer 7</customer_name>
+    <subject>Cannot access account</subject>
+    <description>I cannot access my account after resetting my password and need assistance.</description>
+    <category>account_access</category>
+    <priority>medium</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>account_access</tag>
+    </tags>
+    <metadata>
+      <source>email</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-8</customer_id>
+    <customer_email>sample8@example.com</customer_email>
+    <customer_name>Sample Customer 8</customer_name>
+    <subject>Application crash on save</subject>
+    <description>The application shows an error and crashes when I save a ticket.</description>
+    <category>technical_issue</category>
+    <priority>low</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>technical_issue</tag>
+    </tags>
+    <metadata>
+      <source>api</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-9</customer_id>
+    <customer_email>sample9@example.com</customer_email>
+    <customer_name>Sample Customer 9</customer_name>
+    <subject>Invoice refund question</subject>
+    <description>I need help understanding a payment invoice and refund status.</description>
+    <category>billing_question</category>
+    <priority>urgent</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>billing_question</tag>
+    </tags>
+    <metadata>
+      <source>chat</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-10</customer_id>
+    <customer_email>sample10@example.com</customer_email>
+    <customer_name>Sample Customer 10</customer_name>
+    <subject>Feature suggestion for dashboard</subject>
+    <description>Please consider this enhancement suggestion for the dashboard workflow.</description>
+    <category>feature_request</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>feature_request</tag>
+    </tags>
+    <metadata>
+      <source>phone</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+    <assigned_to>agent-10</assigned_to>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-11</customer_id>
+    <customer_email>sample11@example.com</customer_email>
+    <customer_name>Sample Customer 11</customer_name>
+    <subject>Bug reproduction steps</subject>
+    <description>Here are the steps to reproduce the defect in the customer portal.</description>
+    <category>bug_report</category>
+    <priority>medium</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>bug_report</tag>
+    </tags>
+    <metadata>
+      <source>web_form</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-12</customer_id>
+    <customer_email>sample12@example.com</customer_email>
+    <customer_name>Sample Customer 12</customer_name>
+    <subject>General support question</subject>
+    <description>I have a general support question about my customer profile.</description>
+    <category>other</category>
+    <priority>low</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>other</tag>
+    </tags>
+    <metadata>
+      <source>email</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-13</customer_id>
+    <customer_email>sample13@example.com</customer_email>
+    <customer_name>Sample Customer 13</customer_name>
+    <subject>Cannot access account</subject>
+    <description>I cannot access my account after resetting my password and need assistance.</description>
+    <category>account_access</category>
+    <priority>urgent</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>account_access</tag>
+    </tags>
+    <metadata>
+      <source>api</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-14</customer_id>
+    <customer_email>sample14@example.com</customer_email>
+    <customer_name>Sample Customer 14</customer_name>
+    <subject>Application crash on save</subject>
+    <description>The application shows an error and crashes when I save a ticket.</description>
+    <category>technical_issue</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>technical_issue</tag>
+    </tags>
+    <metadata>
+      <source>chat</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-15</customer_id>
+    <customer_email>sample15@example.com</customer_email>
+    <customer_name>Sample Customer 15</customer_name>
+    <subject>Invoice refund question</subject>
+    <description>I need help understanding a payment invoice and refund status.</description>
+    <category>billing_question</category>
+    <priority>medium</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>billing_question</tag>
+    </tags>
+    <metadata>
+      <source>phone</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+    <assigned_to>agent-15</assigned_to>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-16</customer_id>
+    <customer_email>sample16@example.com</customer_email>
+    <customer_name>Sample Customer 16</customer_name>
+    <subject>Feature suggestion for dashboard</subject>
+    <description>Please consider this enhancement suggestion for the dashboard workflow.</description>
+    <category>feature_request</category>
+    <priority>low</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>feature_request</tag>
+    </tags>
+    <metadata>
+      <source>web_form</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-17</customer_id>
+    <customer_email>sample17@example.com</customer_email>
+    <customer_name>Sample Customer 17</customer_name>
+    <subject>Bug reproduction steps</subject>
+    <description>Here are the steps to reproduce the defect in the customer portal.</description>
+    <category>bug_report</category>
+    <priority>urgent</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>bug_report</tag>
+    </tags>
+    <metadata>
+      <source>email</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-18</customer_id>
+    <customer_email>sample18@example.com</customer_email>
+    <customer_name>Sample Customer 18</customer_name>
+    <subject>General support question</subject>
+    <description>I have a general support question about my customer profile.</description>
+    <category>other</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>other</tag>
+    </tags>
+    <metadata>
+      <source>api</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-19</customer_id>
+    <customer_email>sample19@example.com</customer_email>
+    <customer_name>Sample Customer 19</customer_name>
+    <subject>Cannot access account</subject>
+    <description>I cannot access my account after resetting my password and need assistance.</description>
+    <category>account_access</category>
+    <priority>medium</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>account_access</tag>
+    </tags>
+    <metadata>
+      <source>chat</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-20</customer_id>
+    <customer_email>sample20@example.com</customer_email>
+    <customer_name>Sample Customer 20</customer_name>
+    <subject>Application crash on save</subject>
+    <description>The application shows an error and crashes when I save a ticket.</description>
+    <category>technical_issue</category>
+    <priority>low</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>technical_issue</tag>
+    </tags>
+    <metadata>
+      <source>phone</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+    <assigned_to>agent-20</assigned_to>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-21</customer_id>
+    <customer_email>sample21@example.com</customer_email>
+    <customer_name>Sample Customer 21</customer_name>
+    <subject>Invoice refund question</subject>
+    <description>I need help understanding a payment invoice and refund status.</description>
+    <category>billing_question</category>
+    <priority>urgent</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>billing_question</tag>
+    </tags>
+    <metadata>
+      <source>web_form</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-22</customer_id>
+    <customer_email>sample22@example.com</customer_email>
+    <customer_name>Sample Customer 22</customer_name>
+    <subject>Feature suggestion for dashboard</subject>
+    <description>Please consider this enhancement suggestion for the dashboard workflow.</description>
+    <category>feature_request</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>feature_request</tag>
+    </tags>
+    <metadata>
+      <source>email</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-23</customer_id>
+    <customer_email>sample23@example.com</customer_email>
+    <customer_name>Sample Customer 23</customer_name>
+    <subject>Bug reproduction steps</subject>
+    <description>Here are the steps to reproduce the defect in the customer portal.</description>
+    <category>bug_report</category>
+    <priority>medium</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>bug_report</tag>
+    </tags>
+    <metadata>
+      <source>api</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-24</customer_id>
+    <customer_email>sample24@example.com</customer_email>
+    <customer_name>Sample Customer 24</customer_name>
+    <subject>General support question</subject>
+    <description>I have a general support question about my customer profile.</description>
+    <category>other</category>
+    <priority>low</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>other</tag>
+    </tags>
+    <metadata>
+      <source>chat</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-25</customer_id>
+    <customer_email>sample25@example.com</customer_email>
+    <customer_name>Sample Customer 25</customer_name>
+    <subject>Cannot access account</subject>
+    <description>I cannot access my account after resetting my password and need assistance.</description>
+    <category>account_access</category>
+    <priority>urgent</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>account_access</tag>
+    </tags>
+    <metadata>
+      <source>phone</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+    <assigned_to>agent-25</assigned_to>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-26</customer_id>
+    <customer_email>sample26@example.com</customer_email>
+    <customer_name>Sample Customer 26</customer_name>
+    <subject>Application crash on save</subject>
+    <description>The application shows an error and crashes when I save a ticket.</description>
+    <category>technical_issue</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>technical_issue</tag>
+    </tags>
+    <metadata>
+      <source>web_form</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-27</customer_id>
+    <customer_email>sample27@example.com</customer_email>
+    <customer_name>Sample Customer 27</customer_name>
+    <subject>Invoice refund question</subject>
+    <description>I need help understanding a payment invoice and refund status.</description>
+    <category>billing_question</category>
+    <priority>medium</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>billing_question</tag>
+    </tags>
+    <metadata>
+      <source>email</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-28</customer_id>
+    <customer_email>sample28@example.com</customer_email>
+    <customer_name>Sample Customer 28</customer_name>
+    <subject>Feature suggestion for dashboard</subject>
+    <description>Please consider this enhancement suggestion for the dashboard workflow.</description>
+    <category>feature_request</category>
+    <priority>low</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>feature_request</tag>
+    </tags>
+    <metadata>
+      <source>api</source>
+      <browser>Edge</browser>
+      <device_type>desktop</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-29</customer_id>
+    <customer_email>sample29@example.com</customer_email>
+    <customer_name>Sample Customer 29</customer_name>
+    <subject>Bug reproduction steps</subject>
+    <description>Here are the steps to reproduce the defect in the customer portal.</description>
+    <category>bug_report</category>
+    <priority>urgent</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>bug_report</tag>
+    </tags>
+    <metadata>
+      <source>chat</source>
+      <browser>Edge</browser>
+      <device_type>mobile</device_type>
+    </metadata>
+  </ticket>
+  <ticket>
+    <customer_id>sample-customer-30</customer_id>
+    <customer_email>sample30@example.com</customer_email>
+    <customer_name>Sample Customer 30</customer_name>
+    <subject>General support question</subject>
+    <description>I have a general support question about my customer profile.</description>
+    <category>other</category>
+    <priority>high</priority>
+    <status>new</status>
+    <tags>
+      <tag>sample</tag>
+      <tag>other</tag>
+    </tags>
+    <metadata>
+      <source>phone</source>
+      <browser>Edge</browser>
+      <device_type>tablet</device_type>
+    </metadata>
+    <assigned_to>agent-30</assigned_to>
+  </ticket>
+</tickets>
+
