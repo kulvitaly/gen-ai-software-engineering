@@ -1,0 +1,140 @@
+# GraphQL contract (HotChocolate / Chillicream) — Virtual Credit Card Management
+# Errors-as-data: mutations return payload types carrying `errors` (never leak sensitive detail).
+# All operations require an authenticated OIDC subject; financial operations additionally require
+# an Active (KYC-passed) account.
+
+scalar DateTime
+scalar Date
+scalar Decimal
+
+# ---------- Enums ----------
+
+enum AccountState { PENDING_VERIFICATION ACTIVE BLOCKED }
+enum KycResult { PENDING PASSED FAILED MANUAL_REVIEW }
+enum CardState { ACTIVE FROZEN }
+enum TransactionType { PAYMENT DEPOSIT WITHDRAWAL CASH_ADVANCE FEE DEPOSIT_INTEREST CREDIT_INTEREST }
+enum TransactionStatus { PENDING POSTED DECLINED }
+enum NotificationType { ACCOUNT_CHANGE FAILED_OPERATION }
+
+# ---------- Core types ----------
+
+type Money { amount: Decimal! currency: String! }
+
+type Account {
+  id: ID!
+  state: AccountState!
+  fullName: String!
+  kyc: KycVerification
+  cards: [Card!]!
+}
+
+type KycVerification {
+  id: ID!
+  result: KycResult!
+  diiaReference: String
+  attemptCount: Int!
+  completedAt: DateTime
+}
+
+type Card {
+  id: ID!
+  state: CardState!
+  companyMaxLimit: Money!
+  personalLimit: Money!
+  effectiveLimit: Money!
+  balance: Money!
+  availableCapacity: Money!
+}
+
+type Transaction {
+  id: ID!
+  cardId: ID!
+  type: TransactionType!
+  amount: Money!
+  status: TransactionStatus!
+  balanceAfter: Money!
+  relatedTransactionId: ID
+  occurredAt: DateTime!
+}
+
+type Notification {
+  id: ID!
+  type: NotificationType!
+  message: String!
+  createdAt: DateTime!
+}
+
+type UserError { code: String! message: String! }
+
+# ---------- Queries ----------
+
+input TransactionFilter {
+  cardId: ID!
+  fromDate: DateTime
+  toDate: DateTime
+  types: [TransactionType!]
+  minAmount: Decimal
+  maxAmount: Decimal
+  status: TransactionStatus
+}
+
+type Query {
+  me: Account!                                   # current account + KYC + cards
+  card(id: ID!): Card
+  transactions(filter: TransactionFilter!,
+               first: Int = 50, after: String): TransactionConnection!  # FR-017/018
+  notifications(first: Int = 50, after: String): [Notification!]!
+}
+
+type TransactionConnection {
+  nodes: [Transaction!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+type PageInfo { hasNextPage: Boolean! endCursor: String }
+
+# ---------- Mutations ----------
+# Money mutations take an idempotencyKey (FR-029).
+
+input RegisterInput { fullName: String! dateOfBirth: Date! nationalTaxIdRef: String! }
+type RegisterPayload { account: Account errors: [UserError!]! }
+
+input SubmitKycInput { diiaSessionToken: String! }   # opaque token from Diia client flow
+type SubmitKycPayload { account: Account kyc: KycVerification errors: [UserError!]! }
+
+input CreateCardInput { idempotencyKey: String! }
+type CreateCardPayload { card: Card errors: [UserError!]! }   # blocked unless account ACTIVE (FR-033)
+
+input SetPersonalLimitInput { cardId: ID! amount: Decimal! }
+type SetPersonalLimitPayload { card: Card errors: [UserError!]! }  # FR-005/006
+
+input CardStateInput { cardId: ID! }
+type CardStatePayload { card: Card errors: [UserError!]! }    # freeze / unfreeze (FR-002/003)
+
+input PaymentInput { cardId: ID! amount: Decimal! idempotencyKey: String! merchantRef: String }
+type PaymentPayload { transaction: Transaction errors: [UserError!]! }   # FR-009/010
+
+input DepositInput { cardId: ID! amount: Decimal! idempotencyKey: String! }
+type DepositPayload { transaction: Transaction errors: [UserError!]! }   # FR-012
+
+input WithdrawInput { cardId: ID! amount: Decimal! idempotencyKey: String! }
+# May produce withdrawal (+ paired 3% cash-advance fee) or decline (FR-013/014/015)
+type WithdrawPayload { transaction: Transaction feeTransaction: Transaction errors: [UserError!]! }
+
+type Mutation {
+  register(input: RegisterInput!): RegisterPayload!
+  submitKyc(input: SubmitKycInput!): SubmitKycPayload!
+  createCard(input: CreateCardInput!): CreateCardPayload!
+  setPersonalLimit(input: SetPersonalLimitInput!): SetPersonalLimitPayload!
+  freezeCard(input: CardStateInput!): CardStatePayload!
+  unfreezeCard(input: CardStateInput!): CardStatePayload!
+  makePayment(input: PaymentInput!): PaymentPayload!
+  deposit(input: DepositInput!): DepositPayload!
+  withdraw(input: WithdrawInput!): WithdrawPayload!
+}
+
+# ---------- Subscriptions ----------
+
+type Subscription {
+  notificationReceived: Notification!   # real-time account-change / failed-operation (FR-019/020)
+}
