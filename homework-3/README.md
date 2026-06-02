@@ -42,7 +42,7 @@ slash command and reviewed before moving on:
 
 ```mermaid
 flowchart LR
-    Idea[💡 Product idea<br/>one paragraph] --> C["/constitution<br/>govern principles"]
+    Idea["Product idea (one paragraph)"] --> C["/constitution<br/>govern principles"]
     C --> S["/specify<br/>spec.md"]
     S --> Cl["/clarify<br/>resolve ambiguities"]
     Cl --> P["/plan<br/>plan + research +<br/>data-model + contracts"]
@@ -80,38 +80,45 @@ The most common use cases, grouped by feature area, with the implied
 
 ```mermaid
 flowchart LR
-    %% ===== Actors =====
-    User([👤 Cardholder])
-    Diia([🪪 Diia KYC<br/>external])
-    Compliance([🧑‍⚖️ Compliance<br/>Reviewer])
-    Scheduler([⏰ Daily Job<br/>system])
+    User(["Cardholder"])
+    Diia(["Diia KYC (external)"])
+    Compliance(["Compliance Reviewer"])
+    Scheduler(["Daily Job (system)"])
 
-    subgraph Onboarding["Registration & KYC (P1)"]
-        UC1(Register account)
-        UC2(Verify identity via Diia)
-        UC3(Manual compliance review)
+    subgraph Onboarding["Registration and KYC (P1)"]
+        UC1("Register account")
+        UC2("Verify identity via Diia")
+        UC3("Manual compliance review")
     end
 
-    subgraph Card["Card & Credit Limits (P1)"]
-        UC4(Create virtual card)
-        UC5(Set personal credit limit)
-        UC6(Freeze / unfreeze card)
+    subgraph Card["Card and Credit Limits (P1)"]
+        UC4("Create virtual card")
+        UC5("Set personal credit limit")
+        UC6("Freeze / unfreeze card")
     end
 
     subgraph Money["Money Movement (P2)"]
-        UC7(Make payment)
-        UC8(Deposit funds)
-        UC9(Withdraw funds)
-        UC10("Charge 3% cash-advance fee")
+        UC7("Make payment")
+        UC8("Deposit funds")
+        UC9("Withdraw funds")
+        UC10("Charge 3 percent cash-advance fee")
     end
 
-    subgraph Visibility["Visibility & Earnings (P3)"]
-        UC11(View / filter transactions)
-        UC12(Receive notifications)
-        UC13(Accrue daily interest)
+    subgraph Visibility["Visibility and Earnings (P3)"]
+        UC11("View / filter transactions")
+        UC12("Receive notifications")
+        UC13("Accrue daily interest")
     end
 
-    User --> UC1 & UC4 & UC5 & UC6 & UC7 & UC8 & UC9 & UC11
+    User --> UC1
+    User --> UC4
+    User --> UC5
+    User --> UC6
+    User --> UC7
+    User --> UC8
+    User --> UC9
+    User --> UC11
+
     UC2 --- Diia
     UC3 --- Compliance
     UC13 --- Scheduler
@@ -123,7 +130,9 @@ flowchart LR
     UC4 -. include .-> UC5
     UC7 -. requires active card .-> UC6
     UC9 -. extend credit-funded .-> UC10
-    UC4 & UC6 & UC7 & UC8 & UC9 & UC13 -. trigger .-> UC12
+    UC7 -. trigger .-> UC12
+    UC8 -. trigger .-> UC12
+    UC9 -. trigger .-> UC12
 ```
 
 | Use case | Story / FRs |
@@ -148,40 +157,40 @@ Hybrid** app. Everything is hosted on **Azure**.
 
 ```mermaid
 flowchart TB
-    subgraph Client["📱 .NET MAUI Hybrid Client"]
-        UI[MVVM feature modules<br/>Identity · Cards · Money ·<br/>Transactions · Notifications]
-        SS[StrawberryShake<br/>GraphQL client]
-        LC[(SQLite + SQLCipher<br/>encrypted cache)]
+    subgraph Client[".NET MAUI Hybrid Client"]
+        UI["MVVM feature modules<br/>Identity, Cards, Money,<br/>Transactions, Notifications"]
+        SS["StrawberryShake<br/>GraphQL client"]
+        LC[("SQLite + SQLCipher<br/>encrypted cache")]
         UI --> SS
         UI --> LC
     end
 
-    subgraph Backend["☁️ Modular Monolith Backend (Azure)"]
-        API[HotChocolate GraphQL API<br/>authN/Z · field authorization]
-        App[Application — CQRS / MediatR<br/>LanguageExt Fin/Validation]
+    subgraph Backend["Modular Monolith Backend (Azure)"]
+        API["HotChocolate GraphQL API<br/>authN/Z, field authorization"]
+        App["Application: CQRS / MediatR<br/>LanguageExt Fin/Validation"]
         subgraph Domain["Domain (DDD bounded contexts)"]
-            D1[Identity / KYC]
-            D2[Cards]
-            D3[Ledger]
-            D4[Interest]
+            D1["Identity / KYC"]
+            D2["Cards"]
+            D3["Ledger"]
+            D4["Interest"]
         end
-        Infra[Infrastructure<br/>EF Core · Npgsql · Outbox]
+        Infra["Infrastructure<br/>EF Core, Npgsql, Outbox"]
         API --> App --> Domain
         App --> Infra
     end
 
-    PG[(PostgreSQL<br/>system of record<br/>+ Outbox table)]
-    Debezium[Debezium CDC]
-    Kafka{{Apache Kafka}}
-    Audit[(Append-only<br/>audit store)]
-    Workers[Event consumers<br/>Notifications · Interest postings]
+    PG[("PostgreSQL<br/>system of record<br/>plus Outbox table")]
+    Debezium["Debezium CDC"]
+    Kafka{{"Apache Kafka"}}
+    Audit[("Append-only<br/>audit store")]
+    Workers["Event consumers<br/>Notifications, Interest postings"]
 
-    Diia[/🪪 Diia KYC<br/>external/]
-    OIDC[/🔐 OIDC Provider<br/>IdentityModel.OidcClient/]
-    Logs[(Serilog →<br/>Azure Log Analytics)]
+    Diia["Diia KYC (external)"]
+    OIDC["OIDC Provider<br/>IdentityModel.OidcClient"]
+    Logs[("Serilog to<br/>Azure Log Analytics")]
 
-    SS -- HTTPS / GraphQL --> API
-    UI -. OIDC / PKCE .-> OIDC
+    SS -- "HTTPS / GraphQL" --> API
+    UI -. "OIDC / PKCE" .-> OIDC
     API -. authenticate .-> OIDC
 
     Infra --> PG
@@ -211,6 +220,74 @@ flowchart TB
 - **Idempotency everywhere** — money commands carry idempotency keys so retries never double-process.
 - **GDPR data minimization** — only the KYC result, a Diia reference, and minimal identifiers are
   stored (no document images).
+
+## Rationale
+
+**Why this spec is structured the way it is.** The homework asks for a *layered, traceable*
+specification (see `TASKS.md`). The Spec Kit format delivers exactly that layering: a north-star
+plus scope boundary (`spec.md` → *Feature Specification* / *Assumptions*), observable mid-level
+outcomes (`spec.md` → *User Scenarios*, 8 prioritized stories), non-functional/policy guardrails
+(`.specify/memory/constitution.md` + `spec.md` → *FR-027–030* cross-cutting requirements),
+implementation notes (`plan.md` → *Technical Context* / *Constitution Check*; `research.md`), and a
+genuinely decomposed low-level task list (`tasks.md`). Requirements stay traceable end-to-end: every
+task in `tasks.md` is tagged with the user story (US1–US8) it serves, every story maps to functional
+requirements (FR-xxx) in `spec.md`, and every requirement rolls up to a measurable success criterion
+(SC-xxx). The use-case and architecture diagrams above make that mapping legible at a glance.
+
+**Why prioritized, independently testable stories.** Stories are ranked P1–P3 (`spec.md` → *User
+Scenarios*) so the foundational, compliance-critical slices (KYC, card creation) precede
+convenience features (freeze, history, notifications). Each story carries its own *Independent Test*
+and *Acceptance Scenarios*, so the spec doubles as a verification plan rather than leaving testing
+as an afterthought.
+
+**How performance targets were chosen.** The seed brief gave no numbers, so targets were *derived*
+rather than invented, and explicitly labeled as assumptions for stakeholder confirmation
+(`plan.md` → *Performance Goals*; `research.md` → *Resolved unknowns*). Two sources drove them:
+
+- **Reverse-engineered from the spec's own success criteria** — these are user-observable promises,
+  not arbitrary SLAs: card creation end-to-end `< 3 min` (SC-002), freeze/unfreeze effective for new
+  payments `< 5 s` (SC-004), notifications delivered `< 1 min` (SC-007), and daily interest
+  completing within its processing window (SC-008).
+- **FinTech UX/ops norms for the rest** — GraphQL read p95 `< 300 ms` and mutation p95 `< 500 ms`
+  reflect typical interactive-banking responsiveness; the `~10k users / ~50 mutations/s` scale
+  (`plan.md` → *Scale/Scope*) is a conservative starting envelope chosen so the modular-monolith
+  decision is defensible. Each is a target/range, not a vague "fast," and each is flagged as an
+  assumed default.
+
+**How verification depth was chosen.** Depth is driven by *risk*, governed by the constitution
+rather than by taste. Principle V (*Testing Standards — NON-NEGOTIABLE*) mandates automated coverage
+of critical paths, so `tasks.md` deliberately includes test tasks *even though the spec did not
+request them* (see its header note) and concentrates them on money movement, limits, KYC/auth, and
+interest math — the paths where a defect is most costly. Verification appears at three levels:
+acceptance scenarios per story (`spec.md`), measurable success criteria with explicit 100% targets
+for money/audit/idempotency (`spec.md` → *Success Criteria*, SC-001/003/005/010/011/012), and
+contract/integration test tasks against the GraphQL schema and the outbox→audit pipeline
+(`tasks.md`; `contracts/`). Lower-risk surfaces (e.g. transaction-history filtering) get lighter
+coverage by design.
+
+## Industry Best Practices
+
+FinTech/regulated-environment practices were added deliberately and live **inside the spec
+artifacts** (not just this README), so an implementer or agent cannot miss them:
+
+| Practice | Where it appears |
+|---|---|
+| **KYC / AML gating** — registration blocked until identity verification passes | `spec.md` → US1, FR-031–039, SC-001; `contracts/kyc-integration.md`; `research.md` §9 |
+| **GDPR data minimization & retention** — store only KYC result + reference + minimal identifiers; defined retention; data-subject rights | `spec.md` → FR-038, FR-030; `.specify/memory/constitution.md` → Principle II; `data-model.md`; `plan.md` → Constitution Check |
+| **Immutable, complete audit trail** — every finance/security action recorded with who/what/when/context | `spec.md` → FR-028, SC-011; `.specify/memory/constitution.md` → Principle III; `research.md` §5; `contracts/events.md` |
+| **Idempotency on money operations** — retries never double-process | `spec.md` → FR-029, SC-012, *Edge Cases*; `research.md` §2, §10; `plan.md` → Constraints |
+| **Least-privilege authN/Z** — users act only on their own cards; deny-by-default | `spec.md` → FR-027; `.specify/memory/constitution.md` → Principle I; `research.md` §3, §8 |
+| **Encryption in transit & at rest** — TLS 1.2+, Postgres + SQLCipher on device, secrets in Key Vault | `plan.md` → Constraints / Constitution Check; `.specify/memory/constitution.md` → Principle I; `research.md` §4, §11 |
+| **Sensitive-data hygiene** — never expose PAN/credentials in notifications, logs, or errors | `spec.md` → FR-022; `research.md` §2, §7; `.specify/memory/constitution.md` → Principle I |
+| **Money correctness** — `numeric(19,4)`, optimistic concurrency, minimum-daily-balance interest | `research.md` §4, §10; `data-model.md`; `spec.md` → FR-023, *Edge Cases* |
+| **Explicit edge cases & failure modes** — KYC outage, concurrency, duplicate ops, limit-below-balance | `spec.md` → *Edge Cases*; `research.md` §9 (circuit breaker / retry-later) |
+| **Graceful degradation** — retry/backoff + circuit breaking on external calls (Diia, Kafka) | `plan.md` → Constitution Check (Principle VII); `research.md` §9 |
+| **Observability & breach detection** — structured logs, correlation IDs, 72-hour breach window | `research.md` §7; `plan.md` → Security & Compliance Requirements |
+| **Accessible, consistent UX** — WCAG 2.1 AA, centralized money/date formatting, no dark patterns | `.specify/memory/constitution.md` → Principle VI; `plan.md` → Constitution Check |
+
+The **constitution gate** is what binds these practices to the design: `plan.md` → *Constitution
+Check* shows, principle by principle, how the design satisfies each one before any task is generated,
+and re-checks them after Phase 1.
 
 ## Repository Layout
 
