@@ -1,6 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.0.0 → 1.1.0
+Bump rationale: Materially expanded two existing principles with new mandatory rules
+  (Clean Architecture + async naming under IV; red-green TDD under V). Additive,
+  backward-compatible principle expansion → MINOR.
+
+Amendment 1.1.0 (2026-06-06):
+- IV. Code Quality & Maintainability — added Clean Architecture dependency-direction rule
+  and a ban on the `Async` method-name suffix.
+- V. Testing Standards — added a red-green-refactor (TDD) mandate (test-first).
+- Dependent templates: no edits required (gates are principle-driven and self-populating).
+
+-- Original 1.0.0 ratification report below --
+
 Version change: (template / unversioned) → 1.0.0
 Bump rationale: Initial ratification of a concrete project constitution from the
   placeholder template. All principles defined for the first time → MAJOR baseline 1.0.0.
@@ -94,6 +107,10 @@ trails are also the primary evidence in dispute resolution and fraud investigati
 
 Code MUST be clear, reviewed, and consistently styled:
 
+- Clean Architecture principles MUST be followed: source dependencies point inward toward the
+  domain; domain and application logic MUST NOT depend on frameworks, UI, persistence, or other
+  infrastructure; layer/boundary contracts MUST be respected and crossed only through abstractions.
+- Asynchronous methods MUST NOT use the `Async` suffix in their names.
 - Every change MUST be submitted via pull request and approved by at least one other engineer
   before merge. Changes touching auth, payments, or personal data require domain-owner review.
 - Automated linting and formatting MUST pass in CI; style is enforced by tooling, not debate.
@@ -109,6 +126,9 @@ defect rates and lowers the cost of regulatory and security changes.
 
 Correctness MUST be demonstrated by automated tests:
 
+- A red-green-refactor (TDD) approach MUST be followed: write a failing test that specifies the
+  desired behavior (red), implement the minimum needed to pass it (green), then refactor while
+  keeping tests green. Tests precede implementation, not follow it.
 - Critical paths — authentication, authorization, money movement, and personal-data handling —
   MUST have automated test coverage before merge.
 - New or changed contracts between services MUST have contract/integration tests.
@@ -202,4 +222,4 @@ All work MUST pass these gates before reaching production:
 - **Periodic review**: This constitution SHOULD be reviewed at least annually, and after any
   significant security incident or regulatory change, to confirm it remains accurate and adequate.
 
-**Version**: 1.0.0 | **Ratified**: 2026-05-30 | **Last Amended**: 2026-05-30
+**Version**: 1.1.0 | **Ratified**: 2026-05-30 | **Last Amended**: 2026-06-06
