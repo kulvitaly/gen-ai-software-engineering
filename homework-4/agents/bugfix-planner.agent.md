@@ -32,7 +32,7 @@ right.
 
 ## Output
 Write `implementation-plan.md` with these sections, in order (see
-`specs/001-agent-pipeline/contracts/implementation-plan.contract.md`):
+`contracts/implementation-plan.contract.md`):
 
 1. `# Implementation Plan: Bug <id>` with a `**Test command**: dotnet test` line.
 2. One `## Change N — <summary>` section per change, each containing: **File**, **Location**

@@ -54,8 +54,29 @@ export const STAGES = [
     model: 'claude-haiku-4-5',
     requires: ['fix-summary.md'],
     output: 'test-report.md',
+    // Independent of security-verifier (both consume only fix-summary.md and
+    // write distinct outputs), so it runs alongside the preceding stage.
+    parallel: true,
   },
 ];
+
+/**
+ * Group the ordered stages into execution groups. A stage marked `parallel`
+ * joins the current group (runs concurrently with the preceding stage); any
+ * other stage starts a new group. For the current STAGES the last group is
+ * [security-verifier, unit-test-generator].
+ */
+export function executionGroups(stages) {
+  const groups = [];
+  for (const stage of stages) {
+    if (stage.parallel && groups.length > 0) {
+      groups[groups.length - 1].push(stage);
+    } else {
+      groups.push([stage]);
+    }
+  }
+  return groups;
+}
 
 /**
  * Return the list of required input artifacts that are missing for a stage.

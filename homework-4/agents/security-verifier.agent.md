@@ -31,7 +31,7 @@ costly. Strongest reasoning is justified.
 
 ## Output
 Write `security-report.md` with these sections, in order (see
-`specs/001-agent-pipeline/contracts/security-report.contract.md`):
+`contracts/security-report.contract.md`):
 
 1. `## Scope` — the changed files reviewed and the categories considered.
 2. `## Findings` — one entry each: **Severity**, **Location** (file:line), **Category**,

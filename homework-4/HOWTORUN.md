@@ -29,10 +29,12 @@ dotnet run --project src/API
 npm run pipeline -- 001 --dry-run
 ```
 
-Confirms the six stages and their order:
+Confirms the six stages and their order, and flags the parallel group:
 
 ```
 bug-researcher -> research-verifier -> bugfix-planner -> bug-fixer -> security-verifier -> unit-test-generator
+...
+[pipeline] Stages 5-6 run IN PARALLEL: security-verifier, unit-test-generator
 ```
 
 ## 4. Run the full pipeline (single command)
@@ -48,8 +50,12 @@ Runs, in order, with no manual steps between:
 2. **research-verifier** (`opus-4.8`) → `research/verified-research.md`
 3. **bugfix-planner** (`opus-4.8`) → `implementation-plan.md`
 4. **bug-fixer** (`sonnet-4.6`) → applies the plan, runs `dotnet test`, writes `fix-summary.md`
-5. **security-verifier** (`opus-4.8`) → `security-report.md` (report only)
-6. **unit-test-generator** (`haiku-4.5`) → xUnit tests under `tests/Tests/` + `test-report.md`
+5. **security-verifier** (`opus-4.8`) → `security-report.md` (report only) ┐ run **in parallel**
+6. **unit-test-generator** (`haiku-4.5`) → xUnit tests under `tests/Tests/` + `test-report.md` ┘
+
+Stages 5 and 6 both depend only on `fix-summary.md` and write distinct outputs, so they are launched
+together (`Promise.all`) and run concurrently; each line of their live output is prefixed with the
+stage name (`[security-verifier] …` / `[unit-test-generator] …`).
 
 Each stage auto-loads its skill, receives its prompt via stdin, runs with
 `--permission-mode bypassPermissions` (so the fix/test stages can run `dotnet test`), and the run
@@ -65,5 +71,5 @@ npm run test:pipeline      # node --test: stage order, models, producer/consumer
 
 - Bug seed + generated artifacts: `context/bugs/001/`
 - Agent definitions: `agents/`   ·   Skills: `skills/`
-- Artifact contracts: `specs/001-agent-pipeline/contracts/`
+- Artifact contracts: `contracts/`
 - Screenshots: `docs/screenshots/`

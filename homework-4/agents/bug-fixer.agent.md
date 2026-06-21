@@ -28,7 +28,7 @@ well-specified edits and runs tests, where Sonnet gives strong coding at balance
 
 ## Output
 Write `fix-summary.md` with these sections, in order (see
-`specs/001-agent-pipeline/contracts/fix-summary.contract.md`):
+`contracts/fix-summary.contract.md`):
 
 1. `## Changes Made` — one entry per file: location (file:line), **Before** block, **After** block,
    and the test result observed after the change.

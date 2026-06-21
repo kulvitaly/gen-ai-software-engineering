@@ -30,7 +30,7 @@ the pipeline; a wrong diagnosis misleads every downstream agent.
 
 ## Output
 Write `research/codebase-research.md` with these sections, in order (see
-`specs/001-agent-pipeline/contracts/codebase-research.contract.md`):
+`contracts/codebase-research.contract.md`):
 
 1. `## Root Cause` — a short, plain statement of what causes the bug.
 2. `## Claims` — a numbered list (or table); each claim has a `file:line` reference, an exact code

@@ -32,7 +32,7 @@ qualities, and you must report that compliance.
 
 ## Output
 Write `test-report.md` with these sections, in order (see
-`specs/001-agent-pipeline/contracts/test-report.contract.md`):
+`contracts/test-report.contract.md`):
 
 1. `## Scope` — the changed code targeted (confirms tests are for changed code only).
 2. `## Generated Tests` — table: test name | target | test file path | result (pass/fail).

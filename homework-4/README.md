@@ -19,9 +19,11 @@ flowchart LR
   F --> T["Unit Test Generator<br/>(haiku-4.5)"]
 ```
 
-**Run order**: Bug Researcher → Research Verifier → Bugfix Planner → Bug Fixer → Security Verifier →
-Unit Test Generator. Each stage hands off to the next through an artifact in the bug context folder,
-so the chain is fully connected from a single `bug-context.md` seed.
+**Run order**: Bug Researcher → Research Verifier → Bugfix Planner → Bug Fixer → **(Security Verifier
+‖ Unit Test Generator)**. Each stage hands off to the next through an artifact in the bug context
+folder, so the chain is fully connected from a single `bug-context.md` seed. The last two stages both
+consume only the bug-fixer's `fix-summary.md` and write distinct outputs, so the orchestrator runs
+them **concurrently** as one execution group (the fan-out shown in the diagram above).
 
 ## One command
 
@@ -33,8 +35,11 @@ npm run pipeline -- 001 --dry-run   # preview stage order without invoking model
 The orchestrator (`scripts/run-pipeline.mjs`) runs each stage in order, **auto-loads each stage's
 skill**, passes the per-stage prompt to `claude` via stdin (robust against shell quoting), runs with
 `--permission-mode bypassPermissions` so the fix/test stages can run `dotnet test`, and **halts if a
-required input artifact is missing**. (Node is used only as the orchestrator; the application is
-.NET.)
+required input artifact is missing**. Stages 5 and 6 run **concurrently** as one execution group
+(see `executionGroups` in `scripts/pipeline-core.mjs`); both processes are launched together via
+`Promise.all`, and their live output is line-prefixed with the stage name (`[security-verifier] …`,
+`[unit-test-generator] …`) so the interleaved logs stay readable. (Node is used only as the
+orchestrator; the application is .NET.)
 
 ## Agents & model selection (and why)
 
@@ -76,7 +81,7 @@ plans, fixes, security-reviews, and tests this.
 - `security-report.md` — Security Verifier
 - `test-report.md` — Unit Test Generator
 
-Contracts for each artifact live in `specs/001-agent-pipeline/contracts/`.
+Contracts for each artifact live in `contracts/`.
 
 ## Project structure
 
@@ -85,12 +90,12 @@ homework-4/
 ├── README.md / HOWTORUN.md
 ├── agents/                # 6 agent definitions (model in frontmatter)
 ├── skills/                # research-quality-measurement, unit-tests-FIRST
+├── contracts/             # output contract per pipeline artifact
 ├── context/bugs/001/      # bug-context.md (seed) + generated artifacts
 ├── scripts/               # run-pipeline.mjs (orchestrator) + pipeline-core.mjs + tests
 ├── src/                   # .NET app (Domain/Application/Infrastructure/API)
 ├── tests/Tests/           # xUnit test project (dotnet test)
-├── docs/screenshots/      # pipeline run, fix, security scan, unit tests
-└── specs/001-agent-pipeline/   # spec-kit spec, plan, contracts
+└── docs/screenshots/      # pipeline run, fix, security scan, unit tests
 ```
 
 ## Verify

@@ -33,7 +33,7 @@ Load and follow `skills/research-quality-measurement.md`. Use its named quality 
 
 ## Output
 Write `research/verified-research.md` with these sections, in order (see
-`specs/001-agent-pipeline/contracts/verified-research.contract.md`):
+`contracts/verified-research.contract.md`):
 
 1. `## Verification Summary` — overall PASS/FAIL and the Research Quality level (per skill).
 2. `## Verified Claims` — a table: `file:line | expected snippet | verified? (✓/✗)`.

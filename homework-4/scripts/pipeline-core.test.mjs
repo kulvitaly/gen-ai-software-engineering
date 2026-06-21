@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STAGES, missingInputs, buildPrompt } from './pipeline-core.mjs';
+import { STAGES, executionGroups, missingInputs, buildPrompt } from './pipeline-core.mjs';
 
 test('defines the six stages in the required order', () => {
   assert.deepEqual(
@@ -37,6 +37,18 @@ test('every stage input is produced by an upstream stage (or is the seed)', () =
     }
     produced.add(stage.output);
   }
+});
+
+test('groups stages 5 & 6 into one parallel execution group', () => {
+  const groups = executionGroups(STAGES);
+  assert.equal(groups.length, 5);
+  for (const g of groups.slice(0, 4)) {
+    assert.equal(g.length, 1);
+  }
+  assert.deepEqual(
+    groups[4].map((s) => s.name),
+    ['security-verifier', 'unit-test-generator'],
+  );
 });
 
 test('detects missing required inputs', () => {
