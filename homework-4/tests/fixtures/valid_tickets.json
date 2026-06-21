@@ -1,0 +1,18 @@
+[
+  {
+    "customer_id": "customer-1",
+    "customer_email": "ada@example.com",
+    "customer_name": "Ada Lovelace",
+    "subject": "Cannot access account",
+    "description": "I cannot access my customer account after resetting my password.",
+    "category": "account_access",
+    "priority": "high",
+    "status": "new",
+    "tags": ["account", "login"],
+    "metadata": {
+      "source": "web_form",
+      "browser": "Edge",
+      "device_type": "desktop"
+    }
+  }
+]

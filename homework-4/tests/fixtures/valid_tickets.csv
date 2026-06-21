@@ -1,0 +1,3 @@
+customer_id,customer_email,customer_name,subject,description,category,priority,status,tags,metadata.source,metadata.browser,metadata.device_type,assigned_to
+customer-1,ada@example.com,Ada Lovelace,Cannot access account,I cannot access my customer account after resetting my password.,account_access,high,new,account;login,web_form,Edge,desktop,agent-1
+customer-2,grace@example.com,Grace Hopper,Billing invoice question,I need help understanding the latest annual invoice.,billing_question,medium,new,billing;invoice,email,Firefox,desktop,

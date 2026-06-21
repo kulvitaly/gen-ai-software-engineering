@@ -1,0 +1,239 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using Application.Tickets;
+using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Tests;
+
+public sealed class TicketApiTests : IDisposable
+{
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+    };
+
+    private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
+    private readonly WebApplicationFactory<Program> _factory;
+
+    public TicketApiTests()
+    {
+        _factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureServices(services =>
+                {
+                    services.AddSingleton<ISqliteConnectionFactory>(_ => new SqliteConnectionFactory($"Data Source={_databasePath}"));
+                    services.AddScoped<ITicketRepository, SqliteTicketRepository>();
+                });
+            });
+    }
+
+    [Fact]
+    public async Task PostTickets_WithInvalidBody_ReturnsValidationProblem()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var request = ValidCreateRequest() with
+        {
+            CustomerEmail = "not-an-email",
+            Subject = ""
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/tickets", request, JsonOptions);
+        var problem = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("CustomerEmail", out _));
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("Subject", out _));
+    }
+
+    [Fact]
+    public async Task GetTicketById_WhenMissing_ReturnsNotFound()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.GetAsync($"/tickets/{unknownId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostAutoClassify_WhenMissing_ReturnsNotFound()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.PostAsync($"/tickets/{unknownId}/auto-classify", content: null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutTicket_WhenMissing_ReturnsNotFound()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+        var request = new UpdateTicketApiRequest(null, null, "Updated subject", null, null, null, null, null, null, null);
+
+        // Act
+        var response = await client.PutAsJsonAsync($"/tickets/{unknownId}", request, JsonOptions);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteTicket_WhenMissing_ReturnsNotFound()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        // Act
+        var response = await client.DeleteAsync($"/tickets/{unknownId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ImportTickets_WithPartialCsvFailures_ReturnsSummary()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+        var csv = string.Join(
+            Environment.NewLine,
+            "customer_id,customer_email,customer_name,subject,description,category,priority,status,tags,metadata.source,metadata.browser,metadata.device_type,assigned_to",
+            "customer-1,ada@example.com,Ada Lovelace,Cannot access account,I cannot access my customer account after resetting my password.,account_access,high,new,account;login,web_form,Edge,desktop,",
+            "customer-2,bad-email,Grace Hopper,Billing invoice question,I need help understanding the latest annual invoice.,billing_question,medium,new,billing;invoice,email,Firefox,desktop,");
+
+        // Act
+        var response = await client.PostAsync("/tickets/import?format=csv", Text(csv, "text/csv"));
+        var summary = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, summary.RootElement.GetProperty("total").GetInt32());
+        Assert.Equal(1, summary.RootElement.GetProperty("successful").GetInt32());
+        var failure = Assert.Single(summary.RootElement.GetProperty("failed").EnumerateArray());
+        Assert.Equal(2, failure.GetProperty("record_number").GetInt32());
+    }
+
+    [Fact]
+    public async Task ImportTickets_WithUnusableFile_ReturnsValidationProblem()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/tickets/import?format=csv", Text("customer_id,customer_email", "text/csv"));
+        var problem = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("Content", out _));
+    }
+
+    [Fact]
+    public async Task ImportTickets_WithUnsupportedFormat_ReturnsValidationProblem()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/tickets/import?format=yaml", Text("tickets: []", "text/plain"));
+        var problem = await ReadJson(response);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("format", out _));
+    }
+
+    public void Dispose()
+    {
+        _factory.Dispose();
+        SqliteConnection.ClearAllPools();
+
+        if (File.Exists(_databasePath))
+        {
+            File.Delete(_databasePath);
+        }
+    }
+
+    private static async Task<JsonDocument> ReadJson(HttpResponseMessage response)
+    {
+        var stream = await response.Content.ReadAsStreamAsync();
+        return await JsonDocument.ParseAsync(stream);
+    }
+
+    private static StringContent Text(string content, string mediaType)
+    {
+        return new StringContent(content, Encoding.UTF8, mediaType);
+    }
+
+    private static CreateTicketApiRequest ValidCreateRequest()
+    {
+        return new CreateTicketApiRequest(
+            CustomerId: "customer-1",
+            CustomerEmail: "ada@example.com",
+            CustomerName: "Ada Lovelace",
+            Subject: "Cannot access account",
+            Description: "I cannot access my customer account after resetting my password.",
+            Category: "account_access",
+            Priority: "high",
+            Status: "new",
+            Tags: ["account", "login"],
+            Metadata: new TicketMetadataApiRequest("web_form", "Edge", "desktop"),
+            AssignedTo: null);
+    }
+
+    private sealed record CreateTicketApiRequest(
+        string? CustomerId,
+        string? CustomerEmail,
+        string? CustomerName,
+        string? Subject,
+        string? Description,
+        string? Category,
+        string? Priority,
+        string? Status,
+        IReadOnlyCollection<string>? Tags,
+        TicketMetadataApiRequest? Metadata,
+        string? AssignedTo);
+
+    private sealed record UpdateTicketApiRequest(
+        string? CustomerEmail,
+        string? CustomerName,
+        string? Subject,
+        string? Description,
+        string? Category,
+        string? Priority,
+        string? Status,
+        IReadOnlyCollection<string>? Tags,
+        TicketMetadataApiRequest? Metadata,
+        string? AssignedTo,
+        ClassificationApiRequest? Classification = null);
+
+    private sealed record TicketMetadataApiRequest(string? Source, string? Browser, string? DeviceType);
+
+    private sealed record ClassificationApiRequest(
+        string? Category,
+        string? Priority,
+        double Confidence,
+        string? Reasoning,
+        IReadOnlyCollection<string>? KeywordsFound);
+}
