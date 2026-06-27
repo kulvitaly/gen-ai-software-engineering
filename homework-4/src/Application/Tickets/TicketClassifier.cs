@@ -66,7 +66,7 @@ public sealed class TicketClassifier : ITicketClassifier
 
     private static bool ContainsKeyword(string text, string keyword)
     {
-        return text.Contains(keyword);
+        return text.Contains(keyword, StringComparison.OrdinalIgnoreCase);
     }
 
     private static double CalculateConfidence(int categoryMatches, int priorityMatches)

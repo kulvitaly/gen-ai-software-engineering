@@ -68,13 +68,11 @@ public sealed class SqliteTicketRepository(
     {
         ArgumentNullException.ThrowIfNull(ticket);
 
-        var values = ToLiterals(ticket);
-
         await Execute(async () =>
         {
             await using var connection = await connectionFactory.OpenConnection(cancellationToken);
             return await connection.ExecuteAsync(new CommandDefinition(
-            $"""
+            """
             INSERT INTO tickets (
                 id,
                 customer_id,
@@ -96,26 +94,27 @@ public sealed class SqliteTicketRepository(
                 classification_keywords_json
             )
             VALUES (
-                {values.Id},
-                {values.CustomerId},
-                {values.CustomerEmail},
-                {values.CustomerName},
-                {values.Subject},
-                {values.Description},
-                {values.Category},
-                {values.Priority},
-                {values.Status},
-                {values.CreatedAt},
-                {values.UpdatedAt},
-                {values.ResolvedAt},
-                {values.AssignedTo},
-                {values.TagsJson},
-                {values.MetadataJson},
-                {values.ClassificationConfidence},
-                {values.ClassificationReasoning},
-                {values.ClassificationKeywordsJson}
+                @Id,
+                @CustomerId,
+                @CustomerEmail,
+                @CustomerName,
+                @Subject,
+                @Description,
+                @Category,
+                @Priority,
+                @Status,
+                @CreatedAt,
+                @UpdatedAt,
+                @ResolvedAt,
+                @AssignedTo,
+                @TagsJson,
+                @MetadataJson,
+                @ClassificationConfidence,
+                @ClassificationReasoning,
+                @ClassificationKeywordsJson
             );
             """,
+            ToParameters(ticket),
             cancellationToken: cancellationToken));
         }, "Add", cancellationToken);
     }
@@ -126,7 +125,7 @@ public sealed class SqliteTicketRepository(
         {
             await using var connection = await connectionFactory.OpenConnection(cancellationToken);
             return await connection.QuerySingleOrDefaultAsync<TicketRow>(new CommandDefinition(
-            $"""
+            """
             SELECT
                 id,
                 customer_id AS CustomerId,
@@ -147,8 +146,9 @@ public sealed class SqliteTicketRepository(
                 classification_reasoning AS ClassificationReasoning,
                 classification_keywords_json AS ClassificationKeywordsJson
             FROM tickets
-            WHERE id = {ToText(id.ToString())};
+            WHERE id = @Id;
             """,
+            new { Id = id.ToString() },
             cancellationToken: cancellationToken));
         }, "GetById", cancellationToken);
 
@@ -159,15 +159,15 @@ public sealed class SqliteTicketRepository(
     {
         ArgumentNullException.ThrowIfNull(filter);
 
-        var category = ToText(filter.Category?.ToString());
-        var priority = ToText(filter.Priority?.ToString());
-        var status = ToText(filter.Status?.ToString());
+        var category = filter.Category?.ToString();
+        var priority = filter.Priority?.ToString();
+        var status = filter.Status?.ToString();
 
         var rows = await Execute(async () =>
         {
             await using var connection = await connectionFactory.OpenConnection(cancellationToken);
             return await connection.QueryAsync<TicketRow>(new CommandDefinition(
-            $"""
+            """
             SELECT
                 id,
                 customer_id AS CustomerId,
@@ -188,11 +188,12 @@ public sealed class SqliteTicketRepository(
                 classification_reasoning AS ClassificationReasoning,
                 classification_keywords_json AS ClassificationKeywordsJson
             FROM tickets
-            WHERE ({category} IS NULL OR category = {category})
-              AND ({priority} IS NULL OR priority = {priority})
-              AND ({status} IS NULL OR status = {status})
+            WHERE (@Category IS NULL OR category = @Category)
+              AND (@Priority IS NULL OR priority = @Priority)
+              AND (@Status IS NULL OR status = @Status)
             ORDER BY created_at ASC;
             """,
+            new { Category = category, Priority = priority, Status = status },
             cancellationToken: cancellationToken));
         }, "List", cancellationToken);
 
@@ -203,34 +204,33 @@ public sealed class SqliteTicketRepository(
     {
         ArgumentNullException.ThrowIfNull(ticket);
 
-        var values = ToLiterals(ticket);
-
         var affectedRows = await Execute(async () =>
         {
             await using var connection = await connectionFactory.OpenConnection(cancellationToken);
             return await connection.ExecuteAsync(new CommandDefinition(
-            $"""
+            """
             UPDATE tickets
             SET
-                customer_id = {values.CustomerId},
-                customer_email = {values.CustomerEmail},
-                customer_name = {values.CustomerName},
-                subject = {values.Subject},
-                description = {values.Description},
-                category = {values.Category},
-                priority = {values.Priority},
-                status = {values.Status},
-                created_at = {values.CreatedAt},
-                updated_at = {values.UpdatedAt},
-                resolved_at = {values.ResolvedAt},
-                assigned_to = {values.AssignedTo},
-                tags_json = {values.TagsJson},
-                metadata_json = {values.MetadataJson},
-                classification_confidence = {values.ClassificationConfidence},
-                classification_reasoning = {values.ClassificationReasoning},
-                classification_keywords_json = {values.ClassificationKeywordsJson}
-            WHERE id = {values.Id};
+                customer_id = @CustomerId,
+                customer_email = @CustomerEmail,
+                customer_name = @CustomerName,
+                subject = @Subject,
+                description = @Description,
+                category = @Category,
+                priority = @Priority,
+                status = @Status,
+                created_at = @CreatedAt,
+                updated_at = @UpdatedAt,
+                resolved_at = @ResolvedAt,
+                assigned_to = @AssignedTo,
+                tags_json = @TagsJson,
+                metadata_json = @MetadataJson,
+                classification_confidence = @ClassificationConfidence,
+                classification_reasoning = @ClassificationReasoning,
+                classification_keywords_json = @ClassificationKeywordsJson
+            WHERE id = @Id;
             """,
+            ToParameters(ticket),
             cancellationToken: cancellationToken));
         }, "Update", cancellationToken);
 
@@ -243,49 +243,42 @@ public sealed class SqliteTicketRepository(
         {
             await using var connection = await connectionFactory.OpenConnection(cancellationToken);
             return await connection.ExecuteAsync(new CommandDefinition(
-                $"DELETE FROM tickets WHERE id = {ToText(id.ToString())};",
+                "DELETE FROM tickets WHERE id = @Id;",
+                new { Id = id.ToString() },
                 cancellationToken: cancellationToken));
         }, "Delete", cancellationToken);
 
         return affectedRows > 0;
     }
 
-    private static TicketLiterals ToLiterals(Ticket ticket)
+    private static object ToParameters(Ticket ticket)
     {
-        return new TicketLiterals(
-            Id: ToText(ticket.Id.ToString()),
-            CustomerId: ToText(ticket.CustomerId),
-            CustomerEmail: ToText(ticket.CustomerEmail),
-            CustomerName: ToText(ticket.CustomerName),
-            Subject: ToText(ticket.Subject),
-            Description: ToText(ticket.Description),
-            Category: ToText(ticket.Category.ToString()),
-            Priority: ToText(ticket.Priority.ToString()),
-            Status: ToText(ticket.Status.ToString()),
-            CreatedAt: ToText(Format(ticket.CreatedAt)),
-            UpdatedAt: ToText(Format(ticket.UpdatedAt)),
-            ResolvedAt: ToText(ticket.ResolvedAt is null ? null : Format(ticket.ResolvedAt.Value)),
-            AssignedTo: ToText(ticket.AssignedTo),
-            TagsJson: ToText(JsonSerializer.Serialize(ticket.Tags, JsonOptions)),
-            MetadataJson: ToText(JsonSerializer.Serialize(
+        return new
+        {
+            Id = ticket.Id.ToString(),
+            CustomerId = ticket.CustomerId,
+            CustomerEmail = ticket.CustomerEmail,
+            CustomerName = ticket.CustomerName,
+            Subject = ticket.Subject,
+            Description = ticket.Description,
+            Category = ticket.Category.ToString(),
+            Priority = ticket.Priority.ToString(),
+            Status = ticket.Status.ToString(),
+            CreatedAt = Format(ticket.CreatedAt),
+            UpdatedAt = Format(ticket.UpdatedAt),
+            ResolvedAt = ticket.ResolvedAt is null ? null : Format(ticket.ResolvedAt.Value),
+            AssignedTo = ticket.AssignedTo,
+            TagsJson = JsonSerializer.Serialize(ticket.Tags, JsonOptions),
+            MetadataJson = JsonSerializer.Serialize(
                 new StoredMetadata(
                     ticket.Metadata.Source!.Value.ToString(),
                     ticket.Metadata.Browser,
                     ticket.Metadata.DeviceType!.Value.ToString()),
-                JsonOptions)),
-            ClassificationConfidence: ToNumber(ticket.Classification?.Confidence),
-            ClassificationReasoning: ToText(ticket.Classification?.Reasoning),
-            ClassificationKeywordsJson: ToText(JsonSerializer.Serialize(ticket.Classification?.KeywordsFound ?? [], JsonOptions)));
-    }
-
-    private static string ToText(string? value)
-    {
-        return value is null ? "NULL" : $"'{value}'";
-    }
-
-    private static string ToNumber(double? value)
-    {
-        return value?.ToString(CultureInfo.InvariantCulture) ?? "NULL";
+                JsonOptions),
+            ClassificationConfidence = ticket.Classification?.Confidence,
+            ClassificationReasoning = ticket.Classification?.Reasoning,
+            ClassificationKeywordsJson = JsonSerializer.Serialize(ticket.Classification?.KeywordsFound ?? [], JsonOptions),
+        };
     }
 
     private static async Task EnsureClassificationColumns(SqliteConnection connection, CancellationToken cancellationToken)
@@ -398,26 +391,6 @@ public sealed class SqliteTicketRepository(
     }
 
     private sealed record StoredMetadata(string Source, string? Browser, string DeviceType);
-
-    private sealed record TicketLiterals(
-        string Id,
-        string CustomerId,
-        string CustomerEmail,
-        string CustomerName,
-        string Subject,
-        string Description,
-        string Category,
-        string Priority,
-        string Status,
-        string CreatedAt,
-        string UpdatedAt,
-        string ResolvedAt,
-        string AssignedTo,
-        string TagsJson,
-        string MetadataJson,
-        string ClassificationConfidence,
-        string ClassificationReasoning,
-        string ClassificationKeywordsJson);
 
     private sealed class TicketRow
     {
