@@ -46,7 +46,6 @@ public sealed class CreateTicketCommandHandler(
         }
 
         await repository.Add(ticket, cancellationToken);
-        await repository.Add(ticket, cancellationToken);
         return ApplicationResult<TicketDto>.Success(TicketMapper.ToDto(ticket));
     }
 

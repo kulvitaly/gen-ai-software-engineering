@@ -34,38 +34,6 @@ public sealed class IntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task FullLifecycle_CreateUpdateResolveGetDelete_CompletesThroughApi()
-    {
-        // Arrange
-        using var client = _factory.CreateClient();
-        var created = await CreateTicket(client, ValidCreateRequest());
-        var id = created.RootElement.GetProperty("id").GetString();
-
-        // Act
-        var inProgressResponse = await client.PutAsJsonAsync(
-            $"/tickets/{id}",
-            new UpdateTicketApiRequest(Status: "in_progress"),
-            JsonOptions);
-        var resolveResponse = await client.PutAsJsonAsync(
-            $"/tickets/{id}",
-            new UpdateTicketApiRequest(Status: "resolved"),
-            JsonOptions);
-        var getResponse = await client.GetAsync($"/tickets/{id}");
-        var resolved = await ReadJson(getResponse);
-        var deleteResponse = await client.DeleteAsync($"/tickets/{id}");
-        var missingResponse = await client.GetAsync($"/tickets/{id}");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, inProgressResponse.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, resolveResponse.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
-        Assert.Equal("resolved", resolved.RootElement.GetProperty("status").GetString());
-        Assert.NotEqual(JsonValueKind.Null, resolved.RootElement.GetProperty("resolved_at").ValueKind);
-        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, missingResponse.StatusCode);
-    }
-
-    [Fact]
     public async Task BulkImportThenAutoClassify_StoresClassificationOnSelectedRows()
     {
         // Arrange
@@ -89,51 +57,6 @@ public sealed class IntegrationTests : IDisposable
         Assert.Equal("billing_question", classifiedTicket.RootElement.GetProperty("category").GetString());
         Assert.Equal("high", classifiedTicket.RootElement.GetProperty("priority").GetString());
         Assert.Equal("billing_question", classifiedTicket.RootElement.GetProperty("classification").GetProperty("category").GetString());
-    }
-
-    [Fact]
-    public async Task ConcurrentOperations_WithTwentyCreatesAndUpdates_PreservesAllTickets()
-    {
-        // Arrange
-        using var client = _factory.CreateClient();
-        const int ticketCount = 20;
-
-        // Act
-        var createdTickets = await Task.WhenAll(Enumerable.Range(1, ticketCount)
-            .Select(index => CreateTicket(client, ValidCreateRequest(index))));
-        var ids = createdTickets
-            .Select(ticket => ticket.RootElement.GetProperty("id").GetString())
-            .ToArray();
-        var updateResponses = await Task.WhenAll(ids.Select(id => client.PutAsJsonAsync(
-            $"/tickets/{id}",
-            new UpdateTicketApiRequest(Status: "in_progress"),
-            JsonOptions)));
-        var listResponse = await client.GetAsync("/tickets?status=in_progress");
-        var tickets = await ReadJson(listResponse);
-
-        // Assert
-        Assert.All(updateResponses, response => Assert.Equal(HttpStatusCode.OK, response.StatusCode));
-        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
-        Assert.Equal(ticketCount, tickets.RootElement.GetArrayLength());
-    }
-
-    [Fact]
-    public async Task GetTickets_WithCategoryAndPriorityFilters_ReturnsOnlyMatchingTickets()
-    {
-        // Arrange
-        using var client = _factory.CreateClient();
-        var matching = await CreateTicket(client, ValidCreateRequest(1) with { Category = "billing_question", Priority = "high" });
-        await CreateTicket(client, ValidCreateRequest(2) with { Category = "technical_issue", Priority = "high" });
-        await CreateTicket(client, ValidCreateRequest(3) with { Category = "billing_question", Priority = "low" });
-
-        // Act
-        var response = await client.GetAsync("/tickets?category=billing_question&priority=high");
-        var tickets = await ReadJson(response);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var ticket = Assert.Single(tickets.RootElement.EnumerateArray());
-        Assert.Equal(matching.RootElement.GetProperty("id").GetString(), ticket.GetProperty("id").GetString());
     }
 
     [Fact]

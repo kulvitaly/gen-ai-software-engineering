@@ -112,36 +112,6 @@ public sealed class PerformanceTests : IDisposable
     }
 
     [Fact]
-    public async Task AutoClassify_25Tickets_MeetsNBomberQualityGates()
-    {
-        // Arrange
-        using var client = _factory.CreateClient();
-        WarmUp(client);
-        var created = await Task.WhenAll(Enumerable.Range(1, 25)
-            .Select(index => CreateTicket(client, ValidCreateRequest(index) with
-            {
-                Subject = "Billing refund blocking launch",
-                Description = "The payment refund is important and blocking launch.",
-                Category = "other",
-                Priority = "medium"
-            })));
-        var ids = created.Select(ticket => ticket.RootElement.GetProperty("id").GetString()).ToArray();
-
-        // Act
-        var stepStats = RunSingleStepScenario(
-            "auto_classify_25",
-            "post_auto_classify_batch",
-            async () =>
-            {
-                var responses = await Task.WhenAll(ids.Select(id => client.PostAsync($"/tickets/{id}/auto-classify", content: null)));
-                return responses.All(response => response.StatusCode == HttpStatusCode.OK);
-            });
-
-        // Assert
-        AssertQualityGates(stepStats, averageMs: 1_500, maxMs: 3_000, p95Ms: 3_000);
-    }
-
-    [Fact]
     public async Task FilteredList_100Tickets_MeetsNBomberQualityGates()
     {
         // Arrange

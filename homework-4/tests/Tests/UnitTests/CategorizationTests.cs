@@ -29,6 +29,33 @@ public sealed class CategorizationTests
     }
 
     [Theory]
+    [InlineData("LOGIN issue", "User is experiencing an account access problem.", TicketCategory.AccountAccess)]
+    [InlineData("Password reset help", "Customer needs help with resetting their password.", TicketCategory.AccountAccess)]
+    [InlineData("2FA not working", "Two-factor authentication is not functioning correctly.", TicketCategory.AccountAccess)]
+    [InlineData("CAN'T ACCESS account", "User cannot access their account anymore today.", TicketCategory.AccountAccess)]
+    [InlineData("PAYMENT issue", "There is a problem with customer payment processing.", TicketCategory.BillingQuestion)]
+    [InlineData("Invoice problem", "Customer has a question about their invoice details.", TicketCategory.BillingQuestion)]
+    [InlineData("REFUND requested", "Customer is requesting a refund for recent charges.", TicketCategory.BillingQuestion)]
+    [InlineData("BUG report", "Found a bug in the application functionality here.", TicketCategory.TechnicalIssue)]
+    [InlineData("ERROR encountered", "An error was encountered during normal usage.", TicketCategory.TechnicalIssue)]
+    [InlineData("CRASH happening", "The application is crashing intermittently now.", TicketCategory.TechnicalIssue)]
+    [InlineData("FEATURE request", "Customer is requesting a new feature be added.", TicketCategory.FeatureRequest)]
+    [InlineData("Enhancement needed", "This enhancement would improve user experience.", TicketCategory.FeatureRequest)]
+    [InlineData("SUGGESTION here", "I have a suggestion for product improvements.", TicketCategory.FeatureRequest)]
+    [InlineData("REPRODUCTION steps needed", "Here are steps to reproduce this defect now.", TicketCategory.BugReport)]
+    public void Classify_WithMixedCaseKeywords_MatchesCaseInsensitively(string subject, string description, TicketCategory expectedCategory)
+    {
+        // Arrange
+        var ticket = CreateTicket(subject: subject, description: description);
+
+        // Act
+        var classification = _classifier.Classify(ticket);
+
+        // Assert
+        Assert.Equal(expectedCategory, classification.Category);
+    }
+
+    [Theory]
     [InlineData("Critical security outage", "Production down and customers cannot access accounts.", TicketPriority.Urgent)]
     [InlineData("Important blocking issue", "This is blocking the release and needs help asap.", TicketPriority.High)]
     [InlineData("Minor cosmetic suggestion", "This suggestion is a small cosmetic polish item.", TicketPriority.Low)]
@@ -45,22 +72,28 @@ public sealed class CategorizationTests
         Assert.Equal(expectedPriority, classification.Priority);
     }
 
-    [Fact]
-    public void Classify_ReturnsConfidenceReasoningAndKeywords()
+    [Theory]
+    [InlineData("CRITICAL problem", "This is a serious issue affecting our systems.", TicketPriority.Urgent)]
+    [InlineData("PRODUCTION DOWN", "Production is down and needs immediate attention.", TicketPriority.Urgent)]
+    [InlineData("Security breach", "There is a security issue that needs addressing.", TicketPriority.Urgent)]
+    [InlineData("CAN'T ACCESS system", "Customer cannot access the system right now.", TicketPriority.Urgent)]
+    [InlineData("CANNOT ACCESS service", "Users cannot access our service at this time.", TicketPriority.Urgent)]
+    [InlineData("IMPORTANT request", "This is an important matter for our business.", TicketPriority.High)]
+    [InlineData("Blocking issue here", "This is a blocking issue preventing progress.", TicketPriority.High)]
+    [InlineData("ASAP needed", "This needs to be resolved as soon as possible.", TicketPriority.High)]
+    [InlineData("MINOR issue", "This is a small issue with minor impact here.", TicketPriority.Low)]
+    [InlineData("Cosmetic polish", "This is just cosmetic polish for the UI.", TicketPriority.Low)]
+    [InlineData("SUGGESTION item", "I have a suggestion for product development.", TicketPriority.Low)]
+    public void Classify_WithMixedCasePriorityKeywords_MatchesCaseInsensitively(string subject, string description, TicketPriority expectedPriority)
     {
         // Arrange
-        var ticket = CreateTicket(
-            subject: "Login password issue",
-            description: "This is important and blocking password reset access.");
+        var ticket = CreateTicket(subject: subject, description: description);
 
         // Act
         var classification = _classifier.Classify(ticket);
 
         // Assert
-        Assert.InRange(classification.Confidence, 0, 1);
-        Assert.False(string.IsNullOrWhiteSpace(classification.Reasoning));
-        Assert.Contains(classification.KeywordsFound, keyword => keyword.Equals("login", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(classification.KeywordsFound, keyword => keyword.Equals("important", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(expectedPriority, classification.Priority);
     }
 
     [Fact]

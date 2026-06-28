@@ -1,0 +1,14 @@
+{
+  "name": "homework-4-agent-pipeline",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "6-agent bug-fixing pipeline orchestrator for a .NET sample app",
+  "scripts": {
+    "pipeline": "node scripts/run-pipeline.mjs",
+    "test:pipeline": "node --test scripts/pipeline-core.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+*.user
+[Bb]in/
+[Oo]bj/
+*.db
+*.db-shm
+*.db-wal
+TestResults/
+coverage/
+
+# Node (pipeline orchestrator has no deps, but ignore if installed)
+node_modules/
+
+# Misc
+*.log
+.env*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tmp
+*.swp

@@ -10,25 +10,6 @@ public sealed class TicketHandlerTests
     private readonly FakeClock _clock = new(new DateTimeOffset(2026, 5, 16, 12, 0, 0, TimeSpan.Zero));
 
     [Fact]
-    public async Task CreateTicket_WithValidCommand_PersistsTicketAndReturnsDto()
-    {
-        // Arrange
-        var handler = new CreateTicketCommandHandler(_repository, new CreateTicketCommandValidator(), _clock);
-        var command = ValidCreateCommand();
-
-        // Act
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.NotNull(result.Value);
-        Assert.Equal(command.CustomerEmail, result.Value.CustomerEmail);
-        Assert.Equal(_clock.UtcNow, result.Value.CreatedAt);
-        Assert.Equal(_clock.UtcNow, result.Value.UpdatedAt);
-        Assert.Single(_repository.Tickets);
-    }
-
-    [Fact]
     public async Task CreateTicket_WithInvalidCommand_ReturnsStructuredValidationErrors()
     {
         // Arrange
@@ -201,6 +182,46 @@ public sealed class TicketHandlerTests
         Assert.Contains(result.Errors, error => error.Field == nameof(DeleteTicketCommand.Id));
     }
 
+    [Fact]
+    public async Task CreateTicket_WithValidCommand_AddsTicketToRepositoryExactlyOnce()
+    {
+        // Arrange
+        var handler = new CreateTicketCommandHandler(_repository, new CreateTicketCommandValidator(), _clock);
+        var command = ValidCreateCommand();
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        var storedTicket = Assert.Single(_repository.Tickets);
+        Assert.Equal(result.Value.Id, storedTicket.Id);
+        Assert.Equal(result.Value.Subject, storedTicket.Subject);
+    }
+
+    [Fact]
+    public async Task CreateTicket_WithAutoClassifyTrue_AddsTicketToRepositoryExactlyOnce()
+    {
+        // Arrange
+        var classifier = new FakeTicketClassifier();
+        var handler = new CreateTicketCommandHandler(
+            _repository,
+            new CreateTicketCommandValidator(),
+            _clock,
+            classifier);
+        var command = ValidCreateCommand() with { AutoClassify = true };
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        var storedTicket = Assert.Single(_repository.Tickets);
+        Assert.Equal(result.Value.Id, storedTicket.Id);
+    }
+
     private static CreateTicketCommand ValidCreateCommand()
     {
         return new CreateTicketCommand(
@@ -239,6 +260,19 @@ public sealed class TicketHandlerTests
     private sealed class FakeClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; set; } = utcNow;
+    }
+
+    private sealed class FakeTicketClassifier : ITicketClassifier
+    {
+        public TicketClassification Classify(Ticket ticket)
+        {
+            return new TicketClassification(
+                TicketCategory.TechnicalIssue,
+                TicketPriority.Medium,
+                0.95,
+                "faked classification",
+                []);
+        }
     }
 
     private sealed class InMemoryTicketRepository : ITicketRepository
