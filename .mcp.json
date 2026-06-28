@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "lorem-mcp": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "homework-5/custom-mcp-server",
+        "server.py"
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+[project]
+name = "lorem-mcp-server"
+version = "0.1.0"
+description = "Custom FastMCP server that serves word-limited lorem-ipsum content"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=2.0",
+    "httpx>=0.27",
+]
+
+[tool.uv]
+package = false
