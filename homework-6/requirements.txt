@@ -1,0 +1,9 @@
+# Runtime dependencies for the FinTech transaction processing pipeline
+# (orchestrator, pipeline/*, and the frontend/ dashboard backend).
+#
+# Pinned to the versions verified against this codebase (Python 3.11+,
+# tested here on 3.14). Dev-only dependencies (pytest, coverage, etc.) are
+# owned by the testing-agent and MUST NOT be added to this file.
+fastapi==0.139.0
+uvicorn==0.50.0
+pydantic==2.13.4

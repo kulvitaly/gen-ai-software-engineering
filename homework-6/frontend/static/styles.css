@@ -1,0 +1,172 @@
+:root {
+  color-scheme: light dark;
+  --color-approved: #1a7f37;
+  --color-flagged: #9a6700;
+  --color-blocked: #b42318;
+  --color-rejected: #6e7781;
+  --color-border: #d0d7de;
+  --color-bg-tile: #f6f8fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0 1.5rem 3rem;
+  color: #1f2328;
+  background: #ffffff;
+}
+
+.app-header {
+  padding: 1.5rem 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+.app-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.4rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: #57606a;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  font-weight: 600;
+  gap: 0.25rem;
+}
+
+.controls input[type="password"] {
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  min-width: 220px;
+}
+
+.help-text {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #57606a;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid #1a7f37;
+  border-radius: 6px;
+  background: #2da44e;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1a7f37;
+}
+
+button:disabled {
+  background: #94d3a2;
+  border-color: #94d3a2;
+  cursor: not-allowed;
+}
+
+#status-message {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+#status-message[data-tone="error"] {
+  color: var(--color-blocked);
+}
+
+#status-message[data-tone="success"] {
+  color: var(--color-approved);
+}
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.tile {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  background: var(--color-bg-tile);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tile-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #57606a;
+}
+
+.tile-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.tile[data-status="approved"] .tile-value { color: var(--color-approved); }
+.tile[data-status="flagged"] .tile-value { color: var(--color-flagged); }
+.tile[data-status="blocked"] .tile-value { color: var(--color-blocked); }
+.tile[data-status="rejected"] .tile-value { color: var(--color-rejected); }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+thead th {
+  text-align: left;
+  border-bottom: 2px solid var(--color-border);
+  padding: 0.5rem 0.6rem;
+}
+
+tbody td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+tbody tr:hover {
+  background: var(--color-bg-tile);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.status-badge.approved { background: var(--color-approved); }
+.status-badge.flagged { background: var(--color-flagged); }
+.status-badge.blocked { background: var(--color-blocked); }
+.status-badge.rejected { background: var(--color-rejected); }

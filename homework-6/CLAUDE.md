@@ -94,3 +94,53 @@ Amendment procedure: Changes to this constitution MUST be proposed via pull requ
 Versioning policy: This document follows semantic versioning. MAJOR for backward- incompatible governance or principle removals/redefinitions; MINOR for newly added or materially expanded principles/sections; PATCH for clarifications and non-semantic refinements.
 Compliance review: Adherence MUST be verified at each quality gate above. NON-NEGOTIABLE principles (I, II, III, V) MUST NOT be waived; other deviations MUST be documented and approved in the feature's Complexity Tracking with justification.
 Periodic review: This constitution SHOULD be reviewed at least annually, and after any significant security incident or regulatory change, to confirm it remains accurate and adequate.
+
+## Project-Specific Context
+
+This section documents the FinTech transaction processing pipeline built in this repository (`homework-6`). It is maintained by the orchestrated agent chain (`create-specification-agent` → `code-generation-agent` → `testing-agent` → `documentation-agent`) and reflects the current state of that work. The Constitution above is authoritative and unmodified; this section is additive context only.
+
+### Orchestrated chain
+
+`/generate-pipeline` drives four subagents strictly in order, each with its own artifacts:
+
+1. **create-specification-agent** — owns `specification.md` and this section of `CLAUDE.md`.
+2. **code-generation-agent** — owns `orchestrator.py`, `pipeline/*.py`, `frontend/`, `requirements.txt`, `research-notes.md`, `HOWTORUN.md`.
+3. **testing-agent** — owns `tests/`, pytest config, and dev-only dependency pins; enforces ≥ 80% coverage over `pipeline`, `orchestrator`, `frontend`.
+4. **documentation-agent** — owns `README.md` and `docs/` (`architecture.md`, `data-model.md`, `api.md`, `compliance.md`).
+
+### Tech stack
+
+- Python 3.11+, Pydantic v2 (validation), FastAPI + uvicorn (dashboard backend), vanilla HTML/CSS/JS (dashboard UI, no build step), `decimal.Decimal` for all money.
+- FastMCP (`mcp/server.py`, already implemented, read-only over `shared/results/`) — exposes `get_transaction_status`, `list_pipeline_results`, and resource `pipeline://summary`. Registered in `.mcp.json` as the `pipeline` server.
+
+### Key modules and paths (see `specification.md` for the full contract)
+
+- `sample-transactions.json` — the canonical 8-record input batch; every terminal status (`approved`/`flagged`/`blocked`/`rejected`) is exercised by it (see the worked example in `specification.md`).
+- `orchestrator.py` — resets `shared/{input,processing,output,results}` (never `shared/audit/`), seeds envelopes from `sample-transactions.json`, drives the three pipeline stages, polls for completion.
+- `pipeline/validator.py`, `pipeline/fraud_detector.py`, `pipeline/report.py` — the three pipeline stages; each exposes a pure `run(...)` function and has no web-framework dependency (Clean Architecture boundary).
+- `frontend/app.py` + `frontend/static/` — FastAPI dashboard (`POST /run`, `GET /results`), authenticated via the `PIPELINE_API_KEY` environment variable and the `X-API-Key` header.
+- `mcp/server.py`, `.githooks/pre-commit` — pre-existing, not owned by this chain; do not modify.
+
+### Domain glossary
+
+- **Envelope** — the standard message wrapper (`message_id`, `timestamp`, `source_stage`, `target_stage`, `message_type`, `data`) that every record carries as it moves through `shared/`.
+- **Terminal status** — one of `approved`, `flagged`, `blocked`, `rejected`; every transaction reaches exactly one, recorded in `shared/results/`.
+- **Structuring** — an amount deliberately kept just under a reporting/monitoring threshold (here, `[9000.00, 10000.00)`) to evade high-value detection; scored explicitly as its own fraud rule.
+- **Destination country lookup** — a pipeline-internal simulated registry (`DESTINATION_COUNTRY_MAP` in `pipeline/fraud_detector.py`) mapping `destination_account` to a country code for the cross-border fraud rule, since the sample schema only carries one `metadata.country` (treated as `origin_country`).
+- **Trace/correlation id** — the envelope's `message_id`, carried through every audit-log entry for a given transaction.
+
+### Build / run / test commands
+
+- Create venv: `python -m venv .venv` (Windows: `.venv\Scripts\python.exe`).
+- Install runtime deps: `.venv\Scripts\python.exe -m pip install -r requirements.txt`.
+- Run the pipeline: `.venv\Scripts\python.exe orchestrator.py`.
+- Run the dashboard: `.venv\Scripts\python.exe -m uvicorn frontend.app:app --reload` (after setting `PIPELINE_API_KEY` in the environment).
+- Run tests with coverage: `.venv\Scripts\python.exe -m pytest --cov=pipeline --cov=orchestrator --cov=frontend --cov-report=term-missing --cov-fail-under=80`.
+- Enable the pre-commit gate once: `git config core.hooksPath homework-6/.githooks` (see `.githooks/README.md`).
+
+### Conventions
+
+- Money is always `Decimal`, never `float`; `amount` is a JSON string on the wire.
+- No `Async` suffix on async function names (Constitution IV).
+- Audit-log entries never contain `description` or unmasked account numbers (`mask_account_id` masks all but the last two digits).
+- `shared/` is a runtime artifact (git-ignored), except that `shared/audit/audit.log` is conceptually append-only and must never be truncated by application code.
