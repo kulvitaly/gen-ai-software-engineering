@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+#
+# Pre-commit gate for homework-6.
+# Runs the unit-test suite and fails the commit unless line coverage is >= 80%.
+#
+# The git repository root is the whole monorepo, so this hook is deliberately
+# SELF-SCOPED: it only runs when the commit stages files under homework-6/,
+# leaving commits to the other homework folders untouched.
+#
+# Install once (from anywhere in the repo):
+#   git config core.hooksPath homework-6/.githooks
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+HW_DIR="$REPO_ROOT/homework-6"
+
+# 1. Only act when this commit touches homework-6/.
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+if ! printf '%s\n' "$staged" | grep -q '^homework-6/'; then
+  exit 0
+fi
+
+# 2. Nothing to test yet -> do not block. The test suite is produced by the
+#    testing-agent; before it exists there is no coverage to enforce.
+if [ ! -d "$HW_DIR/tests" ]; then
+  echo "pre-commit: homework-6/tests not found yet; skipping the test/coverage gate."
+  exit 0
+fi
+
+# 3. Locate the homework-6 Python interpreter (prefer the project venv).
+if [ -x "$HW_DIR/.venv/Scripts/python.exe" ]; then
+  PY="$HW_DIR/.venv/Scripts/python.exe"   # Windows venv
+elif [ -x "$HW_DIR/.venv/bin/python" ]; then
+  PY="$HW_DIR/.venv/bin/python"           # POSIX venv
+elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+  PY="python"
+else
+  echo "pre-commit ERROR: no Python interpreter found for homework-6." >&2
+  echo "  Create the venv and install deps first (see homework-6/HOWTORUN.md)," >&2
+  echo "  e.g.:  python -m venv .venv && .venv/Scripts/pip install -r requirements.txt" >&2
+  exit 1
+fi
+
+# 4. Ensure pytest + coverage are available.
+if ! "$PY" -m pytest --version >/dev/null 2>&1; then
+  echo "pre-commit ERROR: pytest is not installed in the homework-6 environment." >&2
+  echo "  Install dev deps:  $PY -m pip install pytest pytest-cov" >&2
+  exit 1
+fi
+
+# 5. Run the suite and enforce the coverage floor. A red suite or <80% coverage
+#    exits non-zero and blocks the commit.
+echo "pre-commit: running homework-6 unit tests with a >=80% coverage gate..."
+cd "$HW_DIR"
+"$PY" -m pytest \
+  --cov=pipeline --cov=orchestrator --cov=frontend \
+  --cov-report=term-missing \
+  --cov-fail-under=80
+
+echo "pre-commit: tests green and coverage >= 80%."

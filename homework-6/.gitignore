@@ -1,0 +1,9 @@
+# Verification environment and run report created by /generate-pipeline
+.venv/
+pipeline-run-report.md
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
