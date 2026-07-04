@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinTech Transaction Pipeline Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>FinTech Transaction Pipeline Dashboard</h1>
+    <p class="subtitle">Local operator console for the file-based transaction processing pipeline.</p>
+  </header>
+
+  <main>
+    <section class="controls" aria-label="Pipeline controls">
+      <label for="api-key">
+        API key
+        <input
+          id="api-key"
+          type="password"
+          autocomplete="off"
+          placeholder="X-API-Key value"
+          aria-describedby="api-key-help"
+        />
+      </label>
+      <p id="api-key-help" class="help-text">
+        Kept in this browser tab's memory only -- never stored, never shipped in the app code.
+      </p>
+      <button id="run-button" type="button">Run pipeline</button>
+      <span id="status-message" role="status" aria-live="polite"></span>
+    </section>
+
+    <section class="counts" aria-label="Result counts">
+      <div class="tile" data-status="approved">
+        <span class="tile-label">Approved</span>
+        <span class="tile-value" id="count-approved">0</span>
+      </div>
+      <div class="tile" data-status="flagged">
+        <span class="tile-label">Flagged</span>
+        <span class="tile-value" id="count-flagged">0</span>
+      </div>
+      <div class="tile" data-status="blocked">
+        <span class="tile-label">Blocked</span>
+        <span class="tile-value" id="count-blocked">0</span>
+      </div>
+      <div class="tile" data-status="rejected">
+        <span class="tile-label">Rejected</span>
+        <span class="tile-value" id="count-rejected">0</span>
+      </div>
+    </section>
+
+    <section class="results" aria-label="Transaction results">
+      <table id="results-table">
+        <thead>
+          <tr>
+            <th scope="col">Transaction ID</th>
+            <th scope="col">Status</th>
+            <th scope="col">Score</th>
+            <th scope="col">Reasons</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+      <p id="empty-message" class="help-text">No results yet. Run the pipeline to populate this table.</p>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

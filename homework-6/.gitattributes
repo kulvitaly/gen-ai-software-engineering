@@ -1,0 +1,3 @@
+# Never apply text/EOL conversion to binary assets — it corrupts them.
+*.pdf binary
+*.png binary

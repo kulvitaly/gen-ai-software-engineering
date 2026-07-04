@@ -1,0 +1,38 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Helvetica','fontSize':'18px','primaryColor':'#E8F1FA','primaryTextColor':'#0F2A43','primaryBorderColor':'#2563EB','lineColor':'#5B6B7B','tertiaryColor':'#ffffff'}}}%%
+flowchart LR
+    IN([sample-transactions.json<br/>JSON array · read-only]):::io --> ORC
+
+    ORC[orchestrator<br/>reset + seed shared/ · drive stages · write summary]:::orch
+    ORC -->|shared/input/*.json| VAL
+
+    VAL[Stage 1 · validator<br/>Pydantic v2 schema + business rules]:::stage
+    VAL -->|valid| FRAUD
+    VAL -->|invalid| REJ
+
+    FRAUD[Stage 2 · fraud_detector<br/>additive risk scoring]:::stage
+    FRAUD --> DEC{score to decision}
+    DEC -->|approved| REP
+    DEC -->|flagged| REP
+    DEC -->|blocked| REP
+
+    REJ([rejected]):::term
+    REJ --> REP
+
+    REP[Stage 3 · report<br/>finalize records + summary.json]:::stage
+    REP --> RES([shared/results/<br/>*.json + summary.json]):::io
+
+    RES --> DASH[FastAPI dashboard<br/>POST /run · GET /results · X-API-Key]:::out
+    RES --> MCP[MCP server<br/>read-only]:::out
+
+    ORC -.audit.-> LOG
+    VAL -.audit.-> LOG
+    FRAUD -.audit.-> LOG
+    REP -.audit.-> LOG
+    LOG[(shared/audit/audit.log<br/>append-only JSONL · accounts masked)]:::audit
+
+    classDef io fill:#0F2A43,stroke:#0F2A43,color:#ffffff,font-weight:bold;
+    classDef orch fill:#DCEBFB,stroke:#2563EB,stroke-width:2px,color:#0F2A43,font-weight:bold;
+    classDef stage fill:#D5F3F1,stroke:#0EA5A4,stroke-width:2px,color:#0B3B3A,font-weight:bold;
+    classDef term fill:#FBE4E4,stroke:#D9534F,color:#7A1F1C,font-weight:bold;
+    classDef out fill:#EEF2F7,stroke:#5B6B7B,color:#1F2937;
+    classDef audit fill:#FFF4D6,stroke:#D9A400,color:#5C4500;

@@ -1,0 +1,10 @@
+# Development/test-only dependencies for the FinTech transaction pipeline
+# test suite (testing-agent deliverable). Install alongside requirements.txt:
+#
+#   pip install -r requirements.txt -r requirements-dev.txt
+#
+pytest==9.1.1
+pytest-cov==7.1.0
+# starlette's TestClient (used by fastapi.testclient) requires httpx2; plain
+# httpx still works as a fallback but emits a StarletteDeprecationWarning.
+httpx2==2.5.0
