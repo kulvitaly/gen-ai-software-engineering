@@ -45,40 +45,43 @@ dependency), so it can be tested in isolation. Responsibilities, one per stage:
 
 ## Architecture (pipeline flow)
 
-```
-                          sample-transactions.json  (JSON array, read-only input)
-                                        │
-                                        ▼
-                            ┌───────────────────────┐
-                            │      orchestrator      │  reset + seed shared/, drive stages, write summary
-                            └───────────┬───────────┘
-                                        │  shared/input/<txn>.json  (message envelopes)
-                                        ▼
-                     ┌─────────────────────────────────────┐
-                     │  Stage 1 · validator                 │  Pydantic v2 schema + business rules
-                     └───────────────┬─────────────┬────────┘
-                              valid  │             │  invalid
-                        (→shared/output/)          │  status = rejected
-                                     ▼             ▼
-                     ┌─────────────────────────┐   │
-                     │  Stage 2 · fraud_detector│   │
-                     │  additive risk scoring   │   │
-                     └───────┬─────────┬────────┘   │
-              approved/flagged│         │ blocked   │
-                             ▼         ▼            ▼
-                     ┌─────────────────────────────────────┐
-                     │  Stage 3 · report                    │  finalize records + write summary.json
-                     └───────────────┬─────────────────────┘
-                                     ▼
-                     shared/results/<txn>.json  +  shared/results/summary.json
-                                     │
-                          ┌──────────┴───────────┐
-                          ▼                       ▼
-                 FastAPI dashboard        MCP server (read-only)
-                 (POST /run, GET /results, X-API-Key auth)
+```mermaid
+flowchart TD
+    IN([sample-transactions.json<br/>JSON array · read-only]):::io --> ORC
 
-   Every stage ── appends ──►  shared/audit/audit.log   (append-only JSONL, never truncated,
-                                                          accounts masked, no description logged)
+    ORC[orchestrator<br/>reset + seed shared/ · drive stages · write summary]:::orch
+    ORC -->|shared/input/*.json| VAL
+
+    VAL[Stage 1 · validator<br/>Pydantic v2 schema + business rules]:::stage
+    VAL -->|valid| FRAUD
+    VAL -->|invalid| REJ
+
+    FRAUD[Stage 2 · fraud_detector<br/>additive risk scoring]:::stage
+    FRAUD --> DEC{score to decision}
+    DEC -->|approved| REP
+    DEC -->|flagged| REP
+    DEC -->|blocked| REP
+
+    REJ([rejected]):::term --> REP
+
+    REP[Stage 3 · report<br/>finalize records + write summary.json]:::stage
+    REP --> RES([shared/results/<br/>*.json + summary.json]):::io
+
+    RES --> DASH[FastAPI dashboard<br/>POST /run · GET /results · X-API-Key]:::out
+    RES --> MCP[MCP server<br/>read-only]:::out
+
+    ORC -.audit.-> LOG
+    VAL -.audit.-> LOG
+    FRAUD -.audit.-> LOG
+    REP -.audit.-> LOG
+    LOG[(shared/audit/audit.log<br/>append-only JSONL · accounts masked)]:::audit
+
+    classDef io fill:#0F2A43,stroke:#0F2A43,color:#ffffff;
+    classDef orch fill:#DCEBFB,stroke:#2563EB,stroke-width:2px,color:#0F2A43;
+    classDef stage fill:#D5F3F1,stroke:#0EA5A4,stroke-width:2px,color:#0B3B3A;
+    classDef term fill:#FBE4E4,stroke:#D9534F,color:#7A1F1C;
+    classDef out fill:#EEF2F7,stroke:#5B6B7B,color:#1F2937;
+    classDef audit fill:#FFF4D6,stroke:#D9A400,color:#5C4500;
 ```
 
 ## Tech stack
